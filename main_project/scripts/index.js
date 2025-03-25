@@ -1,11 +1,11 @@
 require(["esri/config"], function(esriConfig){
-  esriConfig.apiKey = "API_KEY"; 
+  esriConfig.apiKey = "AAPTxy8BH1VEsoebNVZXo8HurOQRq8e4NVH7W0bSo5HVzi_Gd8F4qZZI9BfUl6IaHKnmhS4GyX7aabn85ZZ_U5y76dWxXy5INxIKvwutsmixxs1aWBC5YjdtjLnGKjT42oE5yyurClvdTuK-gacN4z4HqzwaunGLcxq_4Pv2VUSxm27tUoB1BQXOhiDiGE33w1VIVV1baLDvLktiR03nnf3nL0yFqwaDVIh7Hu1bX4LYjoU.AT1_i5yGOVLe"; 
 });
 
 
 async function fetchParks() {
   try {
-    const response = await fetch('https://national-parks-app.onrender.com');
+    const response = await fetch('/national-parks');
     if (!response.ok) throw new Error('Failed to fetch parks data');
     return await response.json();
   } catch (error) {
@@ -38,7 +38,7 @@ require([
 
   fetchParks().then((parks) => {
     if (!parks) return;
-    parks.forEach((park) => {
+    parks.data.forEach((park) => {
       if (park.latitude && park.longitude) {
         const point = {
           type: 'point',
