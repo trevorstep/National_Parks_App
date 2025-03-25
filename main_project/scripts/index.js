@@ -1,5 +1,5 @@
 // Load API keys from keys.json
-async function loadKeys() {
+async function loadKeys() { 
   try {
     const response = await fetch('scripts/keys.json');
     if (!response.ok) throw new Error('Failed to load keys.json');
