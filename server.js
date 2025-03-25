@@ -3,7 +3,7 @@ const cors = require('cors');
 const app = express();
 
 // Allow requests from specific origin
-const allowedOrigins = ['https://trevorstep.github.io']; // Update with your specific domains
+const allowedOrigins = ['https://trevorstep.github.io/National_Parks_App/main_project/main.html']; // Update with your specific domains
 const options = {
   origin: function(origin, callback) {
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
@@ -16,7 +16,4 @@ const options = {
 
 app.use(cors(options));
 
-app.get('/api/parks', (req, res) => {
-  // Your logic to return park data
-  res.json({ message: "Data about parks" });
-});
+

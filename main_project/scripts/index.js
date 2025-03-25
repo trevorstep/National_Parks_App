@@ -1,5 +1,5 @@
 require(["esri/config"], function(esriConfig){
-  esriConfig.apiKey = "YOUR_ARCGIS_API_KEY"; 
+  esriConfig.apiKey = "API_KEY"; 
 });
 
 
