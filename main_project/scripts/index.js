@@ -6,16 +6,18 @@ require(["esri/config"], function(esriConfig){
   esriConfig.apiKey = "YOUR_ARCGIS_API_KEY";  // Replace with your ArcGIS API key if you have one.
 });
 
-// Fetch National Parks data from our server-side proxy
+
+// Fetch National Parks from your Render backend
 async function fetchParks() {
   try {
-    const response = await fetch('/api/parks');
-    if (!response.ok) throw new Error('Failed to fetch parks data from proxy');
+    const response = await fetch('https://your-app.onrender.com/api/parks');
+    if (!response.ok) throw new Error('Failed to fetch parks data');
     return await response.json();
   } catch (error) {
     console.error('Error fetching parks data:', error);
   }
 }
+
 
 // Load the Esri modules and create the map
 require([
