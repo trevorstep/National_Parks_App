@@ -1,27 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no" />
-    <title>National Parks Map</title>
-    <link rel="stylesheet" href="styles/styles.css" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>National Parks Map</title>
+  <link rel="stylesheet" href="styles/styles.css" />
   
-    <!-- Load ArcGIS and Calcite components -->
-    <script type="module" src="https://js.arcgis.com/calcite-components/3.0.3/calcite.esm.js"></script>
-    <link rel="stylesheet" href="https://js.arcgis.com/4.32/esri/themes/light/main.css" />
-    <script src="https://js.arcgis.com/4.32/"></script>
-    <script type="module" src="https://js.arcgis.com/map-components/4.32/arcgis-map-components.esm.js"></script>
+  <!-- Load ArcGIS and Calcite components -->
+  <script type="module" src="https://js.arcgis.com/calcite-components/3.0.3/calcite.esm.js"></script>
+  <link rel="stylesheet" href="https://js.arcgis.com/4.32/esri/themes/light/main.css" />
+  <script src="https://js.arcgis.com/4.32/"></script>
+  <script type="module" src="https://js.arcgis.com/map-components/4.32/arcgis-map-components.esm.js"></script>
 </head>
-
 <body>
-    <!-- Remove the arcgis-map element to prevent the extra map -->
-    <div id="viewDiv" style="width: 100%; height: 100vh;"></div>
-
-    <p>Loading...</p>
-
-    <!-- Load API key config and map logic -->
-    <script src="scripts/index.js" type="module"></script>
+  <div id="viewDiv" style="width: 100%; height: 100vh;"></div>
+  <p>Loading...</p>
+  <script src="scripts/index.js" type="module"></script>
 </body>
-
 </html>
