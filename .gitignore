@@ -1,3 +1,4 @@
 config.js
 .env
 keys.json
+node_modules
