@@ -17,7 +17,7 @@ app.get("/national-parks", async (request, response) => {
       const data = await res.json(); // Parse JSON
 
       // Filter only parks with designation "National Park"
-      const nationalParks = data.data.filter(park => park.designation === "National Park");
+      const nationalParks = data.data.filter(park => park.designation === "National park");
 
       if (!res.ok) throw new Error('Failed to fetch parks data');
       response.json(nationalParks); // Send only National Parks to frontend
