@@ -2,7 +2,6 @@ require(["esri/config"], function(esriConfig){
   esriConfig.apiKey = "AAPTxy8BH1VEsoebNVZXo8HurOQRq8e4NVH7W0bSo5HVzi_Gd8F4qZZI9BfUl6IaHKnmhS4GyX7aabn85ZZ_U5y76dWxXy5INxIKvwutsmixxs1aWBC5YjdtjLnGKjT42oE5yyurClvdTuK-gacN4z4HqzwaunGLcxq_4Pv2VUSxm27tUoB1BQXOhiDiGE33w1VIVV1baLDvLktiR03nnf3nL0yFqwaDVIh7Hu1bX4LYjoU.AT1_i5yGOVLe"; 
 });
 
-
 async function fetchParks() {
   try {
     const response = await fetch('/national-parks');
@@ -12,7 +11,6 @@ async function fetchParks() {
     console.error('Error fetching parks data:', error);
   }
 }
-
 
 require([
   'esri/Map',
@@ -25,11 +23,10 @@ require([
     basemap: 'arcgis/topographic'
   });
 
-
   const view = new MapView({
     container: 'viewDiv',
     map: map,
-    center: [-98.5795, 39.8283], 
+    center: [-98.5795, 39.8283],
     zoom: 4
   });
 
@@ -37,44 +34,60 @@ require([
   map.add(graphicsLayer);
 
   fetchParks().then((parks) => {
-    if (!parks || !Array.isArray(parks)) return; 
+    if (!parks || !Array.isArray(parks)) return;
     parks.forEach((park) => {
-      if (park.latitude && park.longitude) {
-        const point = {
-          type: 'point',
-          longitude: park.longitude,
-          latitude: park.latitude
-        };
-
-        const visited = localStorage.getItem(park.parkCode) === 'true';
-        const markerColor = visited ? 'blue' : 'green';
-
-        const marker = new Graphic({
-          geometry: point,
-          symbol: {
-            type: 'simple-marker',
-            color: markerColor,
-            size: '10px'
-          },
-          attributes: {
-            parkCode: park.parkCode,
-            fullName: park.fullName,
-            description: park.description,
-            visited: visited
-          },
-          popupTemplate: {
-            title: park.fullName,
-            content: `
-              <p>${park.description}</p>
-              <label>
-                <input type="checkbox" id="visited-${park.parkCode}" ${visited ? 'checked' : ''}>
-                I've been here!
-              </label>
-            `
+      // Check if the latLong property exists and is not empty
+      if (park.latLong && park.latLong.trim() !== "") {
+        // Parse the latLong string. Expected format: "lat:36.4864, long:-118.5658"
+        const parts = park.latLong.split(",");
+        let lat = null, lng = null;
+        parts.forEach(part => {
+          const trimmed = part.trim();
+          if (trimmed.startsWith("lat:")) {
+            lat = parseFloat(trimmed.split("lat:")[1]);
+          } else if (trimmed.startsWith("long:")) {
+            lng = parseFloat(trimmed.split("long:")[1]);
           }
         });
 
-        graphicsLayer.add(marker);
+        // Only create a marker if both coordinates were successfully parsed
+        if (lat !== null && lng !== null) {
+          const point = {
+            type: 'point',
+            longitude: lng,
+            latitude: lat
+          };
+
+          const visited = localStorage.getItem(park.parkCode) === 'true';
+          const markerColor = visited ? 'blue' : 'green';
+
+          const marker = new Graphic({
+            geometry: point,
+            symbol: {
+              type: 'simple-marker',
+              color: markerColor,
+              size: '10px'
+            },
+            attributes: {
+              parkCode: park.parkCode,
+              fullName: park.fullName,
+              description: park.description,
+              visited: visited
+            },
+            popupTemplate: {
+              title: park.fullName,
+              content: `
+                <p>${park.description}</p>
+                <label>
+                  <input type="checkbox" id="visited-${park.parkCode}" ${visited ? 'checked' : ''}>
+                  I've been here!
+                </label>
+              `
+            }
+          });
+
+          graphicsLayer.add(marker);
+        }
       }
     });
   });
