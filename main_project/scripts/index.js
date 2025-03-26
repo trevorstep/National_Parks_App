@@ -37,8 +37,8 @@ require([
   map.add(graphicsLayer);
 
   fetchParks().then((parks) => {
-    if (!parks) return;
-    parks.data.forEach((park) => {
+    if (!parks || !Array.isArray(parks)) return; 
+    parks.forEach((park) => {
       if (park.latitude && park.longitude) {
         const point = {
           type: 'point',
