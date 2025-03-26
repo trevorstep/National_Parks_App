@@ -18,9 +18,10 @@ app.get("/national-parks", async (request, response) => {
       if (!res.ok) throw new Error('Failed to fetch parks data');
 
       const data = await res.json();
+      console.log("Raw API response:", data); // Debugging
 
-      // Filter parks to include only those with the designation "National Park"
       const nationalParks = data.data.filter(park => park.designation === "National Park");
+      console.log("Filtered Parks:", nationalParks); // Debugging
 
       response.json(nationalParks);
   } catch (error) {
@@ -28,6 +29,7 @@ app.get("/national-parks", async (request, response) => {
       response.status(500).json({ error: 'Failed to fetch national parks' });
   }
 });
+
 
 
 app.listen(3000)
