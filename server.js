@@ -13,32 +13,26 @@ app.get("/national-parks", async (request, response) => {
           let allParks = [];
           let page = 1;
           let totalPages = 1; 
-        
+      
           while (page <= totalPages) {
-            const res = await fetch(`https://developer.nps.gov/api/v1/parks?page=${page}&limit=50`, { 
-              headers: { 'X-Api-Key': process.env.NATIONAL_API_KEY }
-            });
-        
-            if (!res.ok) throw new Error('Failed to fetch parks data');
-        
-            const data = await res.json();
-        
-            if (data.data) {
-              allParks = allParks.concat(
-                data.data.filter(park => 
-                  park.designation && 
-                  park.designation.toLowerCase().includes("national park") 
-                )
-              );
-            }
-        
-            totalPages = Math.ceil(data.total / 50);
-            page++;
+              const res = await fetch(`https://developer.nps.gov/api/v1/parks?page=${page}&limit=50`, { 
+                  headers: { 'X-Api-Key': process.env.NATIONAL_API_KEY }
+              });
+      
+              if (!res.ok) throw new Error('Failed to fetch parks data');
+      
+              const data = await res.json();
+      
+              if (data.data) {
+                  allParks = allParks.concat(data.data.filter(park => park.designation === "National Park"));
+              }
+      
+              totalPages = Math.ceil(data.total / 50); // Ensure we get the correct number of pages
+              page++;
           }
-        
+      
           return allParks;
-        };
-        
+      };
         const nationalParks = await fetchAllParks();
         response.json(nationalParks);
     } catch (error) {
