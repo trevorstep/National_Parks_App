@@ -2,32 +2,16 @@ require(["esri/config"], function(esriConfig){
   esriConfig.apiKey = "AAPTxy8BH1VEsoebNVZXo8HurOQRq8e4NVH7W0bSo5HVzi_Gd8F4qZZI9BfUl6IaHKnmhS4GyX7aabn85ZZ_U5y76dWxXy5INxIKvwutsmixxs1aWBC5YjdtjLnGKjT42oE5yyurClvdTuK-gacN4z4HqzwaunGLcxq_4Pv2VUSxm27tUoB1BQXOhiDiGE33w1VIVV1baLDvLktiR03nnf3nL0yFqwaDVIh7Hu1bX4LYjoU.AT1_i5yGOVLe"; 
 });
 
-
 async function fetchParks() {
   try {
-    let parks = [];
-    let page = 1;
-    let totalPages = 1;
-
-    while (page <= totalPages) {
-      const response = await fetch(`/national-parks?page=${page}&limit=50`);
-      if (!response.ok) throw new Error(`Failed to fetch parks on page ${page}`);
-
-      const data = await response.json();
-      if (data.data) {
-        parks = parks.concat(data.data.filter(park => park.designation === 'National Park'));
-      }
-
-      totalPages = Math.ceil(data.total / 50); // Ensure all pages are fetched
-      page++;
-    }
-
-    return parks;
+    const response = await fetch('/national-parks');
+    if (!response.ok) throw new Error('Failed to fetch parks data');
+    return await response.json();
   } catch (error) {
     console.error('Error fetching parks data:', error);
-    return [];
   }
 }
+
 
 
 require([
