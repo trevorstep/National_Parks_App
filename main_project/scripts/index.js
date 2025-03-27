@@ -37,9 +37,7 @@ require([
   fetchParks().then((parks) => {
     if (!parks || !Array.isArray(parks)) return;
     parks.forEach((park) => {
-      // Check if the latLong property exists and is not empty
       if (park.latLong && park.latLong.trim() !== "") {
-        // Parse the latLong string. Expected format: "lat:36.4864, long:-118.5658"
         const parts = park.latLong.split(",");
         let lat = null, lng = null;
         parts.forEach(part => {
@@ -51,7 +49,6 @@ require([
           }
         });
 
-        // Only create a marker if both coordinates were successfully parsed
         if (lat !== null && lng !== null) {
           const point = {
             type: 'point',
