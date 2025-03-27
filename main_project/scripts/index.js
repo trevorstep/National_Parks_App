@@ -13,7 +13,6 @@ async function fetchParks() {
 }
 
 
-
 require([
   'esri/Map',
   'esri/views/MapView',
