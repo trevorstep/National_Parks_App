@@ -5,6 +5,12 @@ const app = express();
 
 app.use(express.static("main_project"));
 
+app.get("/api/config", (request, response) => {
+    response.json({
+        arcgisApiKey: process.env.ARCGIS_API_KEY
+    });
+});
+
 app.get("/national-parks", async (request, response) => {
     try {
         console.log(process.env.NATIONAL_API_KEY);
