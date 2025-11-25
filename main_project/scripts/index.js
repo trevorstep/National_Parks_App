@@ -138,8 +138,7 @@ function initializeMap() {
                     if (attrs.images && attrs.images.length > 0) {
                       imageHTML = '<div style="display: flex; gap: 5px; margin-bottom: 10px; flex-wrap: wrap;">';
                       attrs.images.slice(0, 3).forEach(img => {
-                        imageHTML += `<img src="${img.url}" alt="${img.altText}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px;">`;
-                      });
+                    imageHTML += `<img src="${img.url}" alt="${img.altText}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; border: 3px solid #ddd;">`;                      });
                       imageHTML += '</div>';
                     }
                     
