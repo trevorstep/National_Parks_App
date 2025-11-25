@@ -30,10 +30,10 @@ app.get("/national-parks", async (request, response) => {
               const data = await res.json();
       
               if (data.data) {
-                  allParks = allParks.concat(data.data.filter(park => park.designation === "National Park"));
+                  allParks = allParks.concat(data.data.filter(park => park.designation === "National"));
               }
       
-              totalPages = Math.ceil(data.total / 50); // Ensure we get the correct number of pages
+              totalPages = Math.ceil(data.total / 50);
               page++;
           }
       
