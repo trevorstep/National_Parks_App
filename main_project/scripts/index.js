@@ -34,7 +34,7 @@ function initializeMap() {
   ], function (Map, MapView, Graphic, GraphicsLayer) {
 
     const map = new Map({
-      basemap: 'terrain' 
+      basemap: 'topo-vector' 
     });
 
     const view = new MapView({
