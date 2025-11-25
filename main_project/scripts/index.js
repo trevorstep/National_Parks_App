@@ -34,14 +34,19 @@ function initializeMap() {
   ], function (Map, MapView, Graphic, GraphicsLayer) {
 
     const map = new Map({
-      basemap: 'topo-vector'  
+      basemap: 'streets-navigation-vector' 
     });
 
     const view = new MapView({
       container: 'viewDiv',
       map: map,
       center: [-98.5795, 39.8283],
-      zoom: 4
+      zoom: 4,
+      constraints: {
+        minZoom: 3,  
+        maxZoom: 18, 
+        rotationEnabled: false  
+      }
     });
 
     const graphicsLayer = new GraphicsLayer();
@@ -85,11 +90,25 @@ function initializeMap() {
               };
 
               const visited = localStorage.getItem(park.parkCode) === 'true';
-              const markerColor = visited ? [0, 0, 255] : [0, 255, 0]; 
-
-              const marker = new Graphic({
-                geometry: point,
-                symbol: {
+              
+              const parkImage = park.images && park.images.length > 0 ? park.images[0].url : null;
+              
+              let markerSymbol;
+              
+              if (parkImage) {
+                markerSymbol = {
+                  type: 'picture-marker',
+                  url: parkImage,
+                  width: '40px',
+                  height: '40px',
+                  outline: {
+                    color: visited ? [0, 0, 255] : [0, 255, 0],
+                    width: 3
+                  }
+                };
+              } else {
+                const markerColor = visited ? [0, 0, 255] : [0, 255, 0];
+                markerSymbol = {
                   type: 'simple-marker',
                   color: markerColor,
                   size: '12px',
@@ -97,22 +116,42 @@ function initializeMap() {
                     color: [255, 255, 255],
                     width: 1
                   }
-                },
+                };
+              }
+
+              const marker = new Graphic({
+                geometry: point,
+                symbol: markerSymbol,
                 attributes: {
                   parkCode: park.parkCode,
                   fullName: park.fullName,
                   description: park.description || "No description available",
-                  visited: visited
+                  visited: visited,
+                  images: park.images || []
                 },
                 popupTemplate: {
                   title: "{fullName}",
-                  content: `
-                    <p>{description}</p>
-                    <label>
-                      <input type="checkbox" class="visited-checkbox" data-parkcode="{parkCode}" ${visited ? 'checked' : ''}>
-                      I've been here!
-                    </label>
-                  `
+                  content: function(feature) {
+                    const attrs = feature.graphic.attributes;
+                    let imageHTML = '';
+                    
+                    if (attrs.images && attrs.images.length > 0) {
+                      imageHTML = '<div style="display: flex; gap: 5px; margin-bottom: 10px; flex-wrap: wrap;">';
+                      attrs.images.slice(0, 3).forEach(img => {
+                        imageHTML += `<img src="${img.url}" alt="${img.altText}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px;">`;
+                      });
+                      imageHTML += '</div>';
+                    }
+                    
+                    return `
+                      ${imageHTML}
+                      <p>${attrs.description}</p>
+                      <label>
+                        <input type="checkbox" class="visited-checkbox" data-parkcode="${attrs.parkCode}" ${attrs.visited ? 'checked' : ''}>
+                        I've been here!
+                      </label>
+                    `;
+                  }
                 }
               });
 
@@ -142,7 +181,7 @@ function initializeMap() {
               setTimeout(() => {
                 const checkbox = document.querySelector('.visited-checkbox');
                 if (checkbox && !checkbox.hasListener) {
-                  checkbox.hasListener = true;
+                  checkbox.hasListener = true; 
                   checkbox.addEventListener('change', (e) => {
                     const parkCode = graphic.attributes.parkCode;
                     const isChecked = e.target.checked;
@@ -155,16 +194,29 @@ function initializeMap() {
                       localStorage.removeItem(parkCode);
                     }
 
-                    const newColor = isChecked ? [0, 0, 255] : [0, 255, 0];
-                    graphic.symbol = {
-                      type: 'simple-marker',
-                      color: newColor,
-                      size: '12px',
-                      outline: {
-                        color: [255, 255, 255],
-                        width: 1
-                      }
-                    };
+                    if (graphic.symbol.type === 'picture-marker') {
+                      graphic.symbol = {
+                        type: 'picture-marker',
+                        url: graphic.symbol.url,
+                        width: '40px',
+                        height: '40px',
+                        outline: {
+                          color: isChecked ? [0, 0, 255] : [0, 255, 0],
+                          width: 3
+                        }
+                      };
+                    } else {
+                      const newColor = isChecked ? [0, 0, 255] : [0, 255, 0];
+                      graphic.symbol = {
+                        type: 'simple-marker',
+                        color: newColor,
+                        size: '12px',
+                        outline: {
+                          color: [255, 255, 255],
+                          width: 1
+                        }
+                      };
+                    }
                     
                     graphicsLayer.graphics = graphicsLayer.graphics;
                   });

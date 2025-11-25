@@ -23,7 +23,7 @@ app.get("/national-parks", async (request, response) => {
       
             while (hasMore) {
                 console.log(`Fetching page starting at ${start}...`);
-                const res = await fetch(`https://developer.nps.gov/api/v1/parks?start=${start}&limit=${limit}`, { 
+                const res = await fetch(`https://developer.nps.gov/api/v1/parks?start=${start}&limit=${limit}&fields=images`, { 
                     headers: { 'X-Api-Key': process.env.NATIONAL_API_KEY }
                 });
       

@@ -12,3 +12,17 @@ p {
 h1 {
     color: red;
 }
+
+/* #viewDiv {
+  width: 80%;   or whatever width you want 
+  height: 600px;  or whatever height you want 
+  margin: 0 auto;   centers it horizontally 
+
+#viewDiv {
+  width: 100%;
+  height: calc(100vh - 100px);  
+  max-width: 1400px;  
+  margin: 0 auto;
+}
+  
+} */
