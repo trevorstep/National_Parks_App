@@ -13,41 +13,57 @@ app.get("/api/config", (request, response) => {
 
 app.get("/national-parks", async (request, response) => {
     try {
-        console.log(process.env.NATIONAL_API_KEY);
+        console.log("Fetching parks...");
         
         const fetchAllParks = async () => {
-          let allParks = [];
-          let page = 1;
-          let totalPages = 1; 
+            let allParks = [];
+            let start = 0;
+            const limit = 50;
+            let hasMore = true;
       
-          while (page <= totalPages) {
-              const res = await fetch(`https://developer.nps.gov/api/v1/parks?page=${page}&limit=50`, { 
-                  headers: { 'X-Api-Key': process.env.NATIONAL_API_KEY }
-              });
+            while (hasMore) {
+                console.log(`Fetching page starting at ${start}...`);
+                const res = await fetch(`https://developer.nps.gov/api/v1/parks?start=${start}&limit=${limit}`, { 
+                    headers: { 'X-Api-Key': process.env.NATIONAL_API_KEY }
+                });
       
-              if (!res.ok) throw new Error('Failed to fetch parks data');
+                if (!res.ok) throw new Error('Failed to fetch parks data');
       
-              const data = await res.json();
+                const data = await res.json();
+                console.log(`Received ${data.data.length} parks, total: ${data.total}`);
+                
+                const designations = [...new Set(data.data.map(p => p.designation))];
+                console.log("Designations in this batch:", designations);
       
-              if (data.data) {
-                  allParks = allParks.concat(data.data.filter(park => park.designation === "National Park"));
-              }
+                if (data.data && data.data.length > 0) {
+                    const nationalParks = data.data.filter(park => 
+                        park.designation === "National Park"
+                    );
+                    console.log(`Found ${nationalParks.length} National Parks in this batch`);
+                    allParks = allParks.concat(nationalParks);
+                } else {
+                    hasMore = false;
+                }
       
-              totalPages = Math.ceil(data.total / 50);
-              page++;
-          }
-      
-          return allParks;
-      };
+                if (start + limit >= data.total) {
+                    hasMore = false;
+                }
+                
+                start += limit;
+            }
+            
+            console.log(`Total National Parks found: ${allParks.length}`);
+            return allParks;
+        };
+        
         const nationalParks = await fetchAllParks();
         response.json(nationalParks);
     } catch (error) {
         console.error('Error fetching parks data:', error);
+        response.status(500).json({ error: 'Failed to fetch parks data' });
     }
 });
 
-app.listen(3000);
-
-
-
-
+app.listen(3000, () => {
+    console.log("Server running on port 3000");
+});
