@@ -3,9 +3,10 @@ fetch('/api/config')
   .then(config => {
     require(["esri/config"], function(esriConfig){
       esriConfig.apiKey = config.arcgisApiKey;
+      console.log("API key configured");
+      
+      initializeMap();
     });
-
-    initializeMap();
   })
   .catch(error => {
     console.error('Error fetching API key:', error);
@@ -15,9 +16,12 @@ async function fetchParks() {
   try {
     const response = await fetch('/national-parks');
     if (!response.ok) throw new Error('Failed to fetch parks data');
-    return await response.json();
+    const parks = await response.json();
+    console.log(`Fetched ${parks.length} parks from server`);
+    return parks;
   } catch (error) {
     console.error('Error fetching parks data:', error);
+    return [];
   }
 }
 
@@ -30,7 +34,7 @@ function initializeMap() {
   ], function (Map, MapView, Graphic, GraphicsLayer) {
 
     const map = new Map({
-      basemap: 'arcgis/topographic'
+      basemap: 'topo-vector'  
     });
 
     const view = new MapView({
@@ -43,96 +47,129 @@ function initializeMap() {
     const graphicsLayer = new GraphicsLayer();
     map.add(graphicsLayer);
 
-    fetchParks().then((parks) => {
-      if (!parks || !Array.isArray(parks)) return;
-      parks.forEach((park) => {
-        if (park.latLong && park.latLong.trim() !== "") {
-          const parts = park.latLong.split(",");
-          let lat = null, lng = null;
-          parts.forEach(part => {
-            const trimmed = part.trim();
-            if (trimmed.startsWith("lat:")) {
-              lat = parseFloat(trimmed.split("lat:")[1]);
-            } else if (trimmed.startsWith("long:")) {
-              lng = parseFloat(trimmed.split("long:")[1]);
-            }
-          });
-
-          if (lat !== null && lng !== null) {
-            const point = {
-              type: 'point',
-              longitude: lng,
-              latitude: lat
-            };
-
-            const visited = localStorage.getItem(park.parkCode) === 'true';
-            const markerColor = visited ? 'blue' : 'green';
-
-            const marker = new Graphic({
-              geometry: point,
-              symbol: {
-                type: 'simple-marker',
-                color: markerColor,
-                size: '10px'
-              },
-              attributes: {
-                parkCode: park.parkCode,
-                fullName: park.fullName,
-                description: park.description,
-                visited: visited
-              },
-              popupTemplate: {
-                title: park.fullName,
-                content: `
-                  <p>${park.description}</p>
-                  <label>
-                    <input type="checkbox" id="visited-${park.parkCode}" ${visited ? 'checked' : ''}>
-                    I've been here!
-                  </label>
-                `
+    view.when(() => {
+      console.log("Map view is ready");
+      
+      fetchParks().then((parks) => {
+        if (!parks || !Array.isArray(parks)) {
+          console.error("No parks data received");
+          return;
+        }
+        
+        console.log(`Processing ${parks.length} parks...`);
+        let addedCount = 0;
+        
+        parks.forEach((park) => {
+          console.log(`Processing park: ${park.fullName}, latLong: ${park.latLong}`);
+          
+          if (park.latLong && park.latLong.trim() !== "") {
+            const parts = park.latLong.split(",");
+            let lat = null, lng = null;
+            
+            parts.forEach(part => {
+              const trimmed = part.trim();
+              if (trimmed.startsWith("lat:")) {
+                lat = parseFloat(trimmed.split("lat:")[1]);
+              } else if (trimmed.startsWith("long:")) {
+                lng = parseFloat(trimmed.split("long:")[1]);
               }
             });
 
-            graphicsLayer.add(marker);
-          }
-        }
-      });
-    });
+            if (lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng)) {
+              console.log(`Adding marker for ${park.fullName} at [${lat}, ${lng}]`);
+              
+              const point = {
+                type: 'point',
+                longitude: lng,
+                latitude: lat
+              };
 
-    view.when(() => {
+              const visited = localStorage.getItem(park.parkCode) === 'true';
+              const markerColor = visited ? [0, 0, 255] : [0, 255, 0]; 
+
+              const marker = new Graphic({
+                geometry: point,
+                symbol: {
+                  type: 'simple-marker',
+                  color: markerColor,
+                  size: '12px',
+                  outline: {
+                    color: [255, 255, 255],
+                    width: 1
+                  }
+                },
+                attributes: {
+                  parkCode: park.parkCode,
+                  fullName: park.fullName,
+                  description: park.description || "No description available",
+                  visited: visited
+                },
+                popupTemplate: {
+                  title: "{fullName}",
+                  content: `
+                    <p>{description}</p>
+                    <label>
+                      <input type="checkbox" class="visited-checkbox" data-parkcode="{parkCode}" ${visited ? 'checked' : ''}>
+                      I've been here!
+                    </label>
+                  `
+                }
+              });
+
+              graphicsLayer.add(marker);
+              addedCount++;
+            } else {
+              console.warn(`Invalid coordinates for ${park.fullName}: lat=${lat}, lng=${lng}`);
+            }
+          } else {
+            console.warn(`No latLong data for ${park.fullName}`);
+          }
+        });
+        
+        console.log(`Successfully added ${addedCount} markers to the map`);
+      });
+
+      view.popup.on("trigger-action", (event) => {
+        console.log("Popup action triggered");
+      });
+
       view.on('click', (event) => {
         view.hitTest(event).then((response) => {
-          const result = response.results.find(
-            (res) => res.graphic && res.graphic.layer === graphicsLayer
-          );
+          if (response.results.length > 0) {
+            const graphic = response.results[0].graphic;
+            
+            if (graphic && graphic.layer === graphicsLayer) {
+              setTimeout(() => {
+                const checkbox = document.querySelector('.visited-checkbox');
+                if (checkbox && !checkbox.hasListener) {
+                  checkbox.hasListener = true;
+                  checkbox.addEventListener('change', (e) => {
+                    const parkCode = graphic.attributes.parkCode;
+                    const isChecked = e.target.checked;
+                    
+                    console.log(`Checkbox changed for ${parkCode}: ${isChecked}`);
 
-          if (result) {
-            const marker = result.graphic;
-            const parkCode = marker.attributes.parkCode;
+                    if (isChecked) {
+                      localStorage.setItem(parkCode, 'true');
+                    } else {
+                      localStorage.removeItem(parkCode);
+                    }
 
-            view.popup.open({
-              location: marker.geometry,
-              features: [marker]
-            });
-
-            const checkbox = document.getElementById(`visited-${parkCode}`);
-            if (checkbox) {
-              checkbox.addEventListener('change', (e) => {
-                const isChecked = e.target.checked;
-
-                if (isChecked) {
-                  localStorage.setItem(parkCode, 'true');
-                } else {
-                  localStorage.removeItem(parkCode);
+                    const newColor = isChecked ? [0, 0, 255] : [0, 255, 0];
+                    graphic.symbol = {
+                      type: 'simple-marker',
+                      color: newColor,
+                      size: '12px',
+                      outline: {
+                        color: [255, 255, 255],
+                        width: 1
+                      }
+                    };
+                    
+                    graphicsLayer.graphics = graphicsLayer.graphics;
+                  });
                 }
-
-                marker.symbol.color = isChecked ? 'blue' : 'green';
-                graphicsLayer.graphics.forEach((g) => {
-                  if (g.attributes.parkCode === parkCode) {
-                    g.symbol.color = isChecked ? 'blue' : 'green';
-                  }
-                });
-              });
+              }, 100);
             }
           }
         });
