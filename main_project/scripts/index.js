@@ -84,7 +84,8 @@ function initializeMap() {
                 latitude: lat
               };
 
-              const visited = localStorage.getItem(park.parkCode) === 'true';
+              const visitedKey = `park_visited_${park.parkCode}`;
+              const visited = localStorage.getItem(visitedKey) === 'true';
               const parkImage = park.images && park.images.length > 0 ? park.images[0].url : null;
               
               let markerSymbol;
@@ -165,13 +166,17 @@ function initializeMap() {
                       imageHTML += '</div>';
                     }
                     
+                    const checked = attrs.visited ? 'checked' : '';
+                    
                     return `
                       ${imageHTML}
-                      <p>${attrs.description}</p>
-                      <label>
-                        <input type="checkbox" class="visited-checkbox" data-parkcode="${attrs.parkCode}" ${attrs.visited ? 'checked' : ''}>
-                        I've been here!
-                      </label>
+                      <p style="margin-bottom: 15px;">${attrs.description}</p>
+                      <div style="padding: 10px; background: #f5f5f5; border-radius: 5px;">
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                          <input type="checkbox" class="visited-checkbox" data-parkcode="${attrs.parkCode}" ${checked} style="margin-right: 8px; width: 18px; height: 18px; cursor: pointer;">
+                          <span style="font-weight: 500;">I've been here!</span>
+                        </label>
+                      </div>
                     `;
                   }
                 }
@@ -203,34 +208,17 @@ function initializeMap() {
                   checkbox.addEventListener('change', (e) => {
                     const parkCode = graphic.attributes.parkCode;
                     const isChecked = e.target.checked;
+                    const visitedKey = `park_visited_${parkCode}`;
 
                     if (isChecked) {
-                      localStorage.setItem(parkCode, 'true');
+                      localStorage.setItem(visitedKey, 'true');
                     } else {
-                      localStorage.removeItem(parkCode);
-                    }
-
-                    if (graphic.symbol.type === 'picture-marker') {
-                      graphic.symbol = {
-                        type: 'picture-marker',
-                        url: graphic.symbol.url,
-                        width: '50px',
-                        height: '50px'
-                      };
-                    } else {
-                      const newColor = isChecked ? [0, 0, 255] : [0, 255, 0];
-                      graphic.symbol = {
-                        type: 'simple-marker',
-                        color: newColor,
-                        size: '12px',
-                        outline: {
-                          color: [255, 255, 255],
-                          width: 1
-                        }
-                      };
+                      localStorage.removeItem(visitedKey);
                     }
                     
-                    graphicsLayer.graphics = graphicsLayer.graphics;
+                    graphic.attributes.visited = isChecked;
+
+                    location.reload();
                   });
                 }
               }, 100);
