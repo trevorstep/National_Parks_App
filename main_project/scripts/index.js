@@ -34,7 +34,7 @@ function initializeMap() {
   ], function (Map, MapView, Graphic, GraphicsLayer) {
 
     const map = new Map({
-      basemap: 'streets-navigation-vector' 
+      basemap: 'terrain' 
     });
 
     const view = new MapView({
