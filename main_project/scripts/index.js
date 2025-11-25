@@ -4,7 +4,6 @@ fetch('/api/config')
     require(["esri/config"], function(esriConfig){
       esriConfig.apiKey = config.arcgisApiKey;
       console.log("API key configured");
-      
       initializeMap();
     });
   })
@@ -34,7 +33,7 @@ function initializeMap() {
   ], function (Map, MapView, Graphic, GraphicsLayer) {
 
     const map = new Map({
-      basemap: 'topo-vector' 
+      basemap: 'topo-vector'
     });
 
     const view = new MapView({
@@ -43,9 +42,9 @@ function initializeMap() {
       center: [-98.5795, 39.8283],
       zoom: 4,
       constraints: {
-        minZoom: 3,  
-        maxZoom: 18, 
-        rotationEnabled: false  
+        minZoom: 3,
+        maxZoom: 18,
+        rotationEnabled: false
       }
     });
 
@@ -65,8 +64,6 @@ function initializeMap() {
         let addedCount = 0;
         
         parks.forEach((park) => {
-          console.log(`Processing park: ${park.fullName}, latLong: ${park.latLong}`);
-          
           if (park.latLong && park.latLong.trim() !== "") {
             const parts = park.latLong.split(",");
             let lat = null, lng = null;
@@ -81,8 +78,6 @@ function initializeMap() {
             });
 
             if (lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng)) {
-              console.log(`Adding marker for ${park.fullName} at [${lat}, ${lng}]`);
-              
               const point = {
                 type: 'point',
                 longitude: lng,
@@ -90,20 +85,47 @@ function initializeMap() {
               };
 
               const visited = localStorage.getItem(park.parkCode) === 'true';
-              
               const parkImage = park.images && park.images.length > 0 ? park.images[0].url : null;
               
               let markerSymbol;
               
               if (parkImage) {
+                const canvas = document.createElement('canvas');
+                canvas.width = 50;
+                canvas.height = 50;
+                const ctx = canvas.getContext('2d');
+                
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = function() {
+                  ctx.beginPath();
+                  ctx.arc(25, 25, 25, 0, Math.PI * 2);
+                  ctx.closePath();
+                  ctx.clip();
+                  ctx.drawImage(img, 0, 0, 50, 50);
+                  
+                  ctx.strokeStyle = visited ? 'rgb(0, 0, 255)' : 'rgb(0, 255, 0)';
+                  ctx.lineWidth = 4;
+                  ctx.beginPath();
+                  ctx.arc(25, 25, 23, 0, Math.PI * 2);
+                  ctx.stroke();
+                  
+                  marker.symbol = {
+                    type: 'picture-marker',
+                    url: canvas.toDataURL(),
+                    width: '50px',
+                    height: '50px'
+                  };
+                };
+                img.src = parkImage;
+                
                 markerSymbol = {
-                  type: 'picture-marker',
-                  url: parkImage,
-                  width: '40px',
-                  height: '40px',
+                  type: 'simple-marker',
+                  color: visited ? [0, 0, 255] : [0, 255, 0],
+                  size: '12px',
                   outline: {
-                    color: visited ? [0, 0, 255] : [0, 255, 0],
-                    width: 3
+                    color: [255, 255, 255],
+                    width: 1
                   }
                 };
               } else {
@@ -136,9 +158,10 @@ function initializeMap() {
                     let imageHTML = '';
                     
                     if (attrs.images && attrs.images.length > 0) {
-                      imageHTML = '<div style="display: flex; gap: 5px; margin-bottom: 10px; flex-wrap: wrap;">';
+                      imageHTML = '<div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;">';
                       attrs.images.slice(0, 3).forEach(img => {
-                    imageHTML += `<img src="${img.url}" alt="${img.altText}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; border: 3px solid #ddd;">`;                      });
+                        imageHTML += `<img src="${img.url}" alt="${img.altText}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px; border: 2px solid #ddd;">`;
+                      });
                       imageHTML += '</div>';
                     }
                     
@@ -156,11 +179,7 @@ function initializeMap() {
 
               graphicsLayer.add(marker);
               addedCount++;
-            } else {
-              console.warn(`Invalid coordinates for ${park.fullName}: lat=${lat}, lng=${lng}`);
             }
-          } else {
-            console.warn(`No latLong data for ${park.fullName}`);
           }
         });
         
@@ -180,12 +199,10 @@ function initializeMap() {
               setTimeout(() => {
                 const checkbox = document.querySelector('.visited-checkbox');
                 if (checkbox && !checkbox.hasListener) {
-                  checkbox.hasListener = true; 
+                  checkbox.hasListener = true;
                   checkbox.addEventListener('change', (e) => {
                     const parkCode = graphic.attributes.parkCode;
                     const isChecked = e.target.checked;
-                    
-                    console.log(`Checkbox changed for ${parkCode}: ${isChecked}`);
 
                     if (isChecked) {
                       localStorage.setItem(parkCode, 'true');
@@ -197,12 +214,8 @@ function initializeMap() {
                       graphic.symbol = {
                         type: 'picture-marker',
                         url: graphic.symbol.url,
-                        width: '40px',
-                        height: '40px',
-                        outline: {
-                          color: isChecked ? [0, 0, 255] : [0, 255, 0],
-                          width: 3
-                        }
+                        width: '50px',
+                        height: '50px'
                       };
                     } else {
                       const newColor = isChecked ? [0, 0, 255] : [0, 255, 0];
