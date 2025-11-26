@@ -1,9 +1,14 @@
 require("dotenv").config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const app = express();
 
 app.use(express.static("main_project"));
+
+app.get("/", (request, response) => {
+    response.sendFile(path.join(__dirname, 'main_project', 'index.html'));
+});
 
 app.get("/api/config", (request, response) => {
     response.json({
@@ -32,10 +37,12 @@ app.get("/national-parks", async (request, response) => {
                 const data = await res.json();
                 console.log(`Received ${data.data.length} parks, total: ${data.total}`);
                 
+                // Log unique designations to see what we're getting
                 const designations = [...new Set(data.data.map(p => p.designation))];
                 console.log("Designations in this batch:", designations);
       
                 if (data.data && data.data.length > 0) {
+                    // Filter for National Parks
                     const nationalParks = data.data.filter(park => 
                         park.designation === "National Park"
                     );
@@ -45,6 +52,7 @@ app.get("/national-parks", async (request, response) => {
                     hasMore = false;
                 }
       
+                // Check if there are more results
                 if (start + limit >= data.total) {
                     hasMore = false;
                 }
