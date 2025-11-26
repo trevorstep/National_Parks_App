@@ -32,10 +32,11 @@ function createPopupContent(attributes) {
     const imagesDiv = document.createElement('div');
     imagesDiv.className = 'popup-images';
     
-    attributes.images.slice(0, 3).forEach(img => {
+    attributes.images.forEach(img => {
       const imgElement = document.createElement('img');
       imgElement.src = img.url;
       imgElement.alt = img.altText || attributes.fullName;
+      imgElement.loading = 'lazy';
       
       imgElement.onerror = function() {
         this.remove();
@@ -83,47 +84,6 @@ function initializeMap() {
     'esri/layers/GraphicsLayer',
     'esri/core/reactiveUtils'
   ], function (Map, MapView, Graphic, GraphicsLayer, reactiveUtils) {
-
-    const imageCache = {};
-
-    function createCircularMarker(imageUrl, visited) {
-      const cacheKey = `${imageUrl}_${visited}`;
-      
-      if (imageCache[cacheKey]) {
-        return Promise.resolve(imageCache[cacheKey]);
-      }
-
-      return new Promise((resolve) => {
-        const canvas = document.createElement('canvas');
-        canvas.width = 50;
-        canvas.height = 50;
-        const ctx = canvas.getContext('2d');
-        
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = function() {
-          ctx.beginPath();
-          ctx.arc(25, 25, 25, 0, Math.PI * 2);
-          ctx.closePath();
-          ctx.clip();
-          ctx.drawImage(img, 0, 0, 50, 50);
-          
-          ctx.strokeStyle = visited ? 'rgb(0, 0, 255)' : 'rgb(255, 0, 0)';
-          ctx.lineWidth = 4;
-          ctx.beginPath();
-          ctx.arc(25, 25, 23, 0, Math.PI * 2);
-          ctx.stroke();
-          
-          const dataUrl = canvas.toDataURL();
-          imageCache[cacheKey] = dataUrl;
-          resolve(dataUrl);
-        };
-        img.onerror = function() {
-          resolve(null);
-        };
-        img.src = imageUrl;
-      });
-    }
 
     const map = new Map({
       basemap: 'topo-vector'
@@ -188,43 +148,17 @@ function initializeMap() {
 
               const visitedKey = `park_visited_${park.parkCode}`;
               const visited = localStorage.getItem(visitedKey) === 'true';
-              const parkImage = park.images && park.images.length > 0 ? park.images[0].url : null;
               
-              let markerSymbol;
-              
-              if (parkImage) {
-                createCircularMarker(parkImage, visited).then((dataUrl) => {
-                  if (dataUrl) {
-                    marker.symbol = {
-                      type: 'picture-marker',
-                      url: dataUrl,
-                      width: '50px',
-                      height: '50px'
-                    };
-                  }
-                });
-                
-                markerSymbol = {
-                  type: 'simple-marker',
-                  color: visited ? [0, 0, 255] : [255, 0, 0],
-                  size: '12px',
-                  outline: {
-                    color: [255, 255, 255],
-                    width: 1
-                  }
-                };
-              } else {
-                const markerColor = visited ? [0, 0, 255] : [255, 0, 0];
-                markerSymbol = {
-                  type: 'simple-marker',
-                  color: markerColor,
-                  size: '12px',
-                  outline: {
-                    color: [255, 255, 255],
-                    width: 1
-                  }
-                };
-              }
+              const markerColor = visited ? [0, 0, 255] : [255, 0, 0];
+              const markerSymbol = {
+                type: 'simple-marker',
+                color: markerColor,
+                size: '14px',
+                outline: {
+                  color: [255, 255, 255],
+                  width: 2
+                }
+              };
 
               const marker = new Graphic({
                 geometry: point,
