@@ -80,16 +80,17 @@ function initializeMap() {
     'esri/Map',
     'esri/views/MapView',
     'esri/Graphic',
-    'esri/layers/GraphicsLayer'
-  ], function (Map, MapView, Graphic, GraphicsLayer) {
+    'esri/layers/GraphicsLayer',
+    'esri/core/reactiveUtils'
+  ], function (Map, MapView, Graphic, GraphicsLayer, reactiveUtils) {
 
-    const imageCache = new Map();
+    const imageCache = {};
 
     function createCircularMarker(imageUrl, visited) {
       const cacheKey = `${imageUrl}_${visited}`;
       
-      if (imageCache.has(cacheKey)) {
-        return imageCache.get(cacheKey);
+      if (imageCache[cacheKey]) {
+        return Promise.resolve(imageCache[cacheKey]);
       }
 
       return new Promise((resolve) => {
@@ -114,7 +115,7 @@ function initializeMap() {
           ctx.stroke();
           
           const dataUrl = canvas.toDataURL();
-          imageCache.set(cacheKey, dataUrl);
+          imageCache[cacheKey] = dataUrl;
           resolve(dataUrl);
         };
         img.onerror = function() {
@@ -252,31 +253,34 @@ function initializeMap() {
         console.log(`Successfully added ${addedCount} markers to the map`);
       });
 
-      view.watch('zoom', (newZoom) => {
-        const scale = Math.max(0.5, Math.min(1.5, newZoom / 6));
-        graphicsLayer.graphics.forEach((graphic) => {
-          if (graphic.symbol.type === 'picture-marker') {
-            const currentUrl = graphic.symbol.url;
-            graphic.symbol = {
-              type: 'picture-marker',
-              url: currentUrl,
-              width: `${50 * scale}px`,
-              height: `${50 * scale}px`
-            };
-          } else {
-            const currentColor = graphic.symbol.color;
-            graphic.symbol = {
-              type: 'simple-marker',
-              color: currentColor,
-              size: `${12 * scale}px`,
-              outline: {
-                color: [255, 255, 255],
-                width: 1
-              }
-            };
-          }
-        });
-      });
+      reactiveUtils.watch(
+        () => view.zoom,
+        (newZoom) => {
+          const scale = Math.max(0.5, Math.min(1.5, newZoom / 6));
+          graphicsLayer.graphics.forEach((graphic) => {
+            if (graphic.symbol.type === 'picture-marker') {
+              const currentUrl = graphic.symbol.url;
+              graphic.symbol = {
+                type: 'picture-marker',
+                url: currentUrl,
+                width: `${50 * scale}px`,
+                height: `${50 * scale}px`
+              };
+            } else {
+              const currentColor = graphic.symbol.color;
+              graphic.symbol = {
+                type: 'simple-marker',
+                color: currentColor,
+                size: `${12 * scale}px`,
+                outline: {
+                  color: [255, 255, 255],
+                  width: 1
+                }
+              };
+            }
+          });
+        }
+      );
 
       view.on('click', (event) => {
         view.hitTest(event).then((response) => {
