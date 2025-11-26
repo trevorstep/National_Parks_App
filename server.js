@@ -4,7 +4,8 @@ const cors = require('cors');
 const path = require('path');
 const app = express();
 
-app.use(express.static("main_project"));
+app.use(cors());
+app.use(express.static(path.join(__dirname, "main_project")));
 
 app.get("/", (request, response) => {
     response.sendFile(path.join(__dirname, 'main_project', 'index.html'));
