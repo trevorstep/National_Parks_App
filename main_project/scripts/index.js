@@ -191,8 +191,30 @@ function initializeMap() {
         console.log(`Successfully added ${addedCount} markers to the map`);
       });
 
-      view.popup.on("trigger-action", (event) => {
-        console.log("Popup action triggered");
+      view.watch('zoom', (newZoom) => {
+        const scale = Math.max(0.5, Math.min(1.5, newZoom / 6));
+        graphicsLayer.graphics.forEach((graphic) => {
+          if (graphic.symbol.type === 'picture-marker') {
+            const currentUrl = graphic.symbol.url;
+            graphic.symbol = {
+              type: 'picture-marker',
+              url: currentUrl,
+              width: `${50 * scale}px`,
+              height: `${50 * scale}px`
+            };
+          } else {
+            const currentColor = graphic.symbol.color;
+            graphic.symbol = {
+              type: 'simple-marker',
+              color: currentColor,
+              size: `${12 * scale}px`,
+              outline: {
+                color: [255, 255, 255],
+                width: 1
+              }
+            };
+          }
+        });
       });
 
       view.on('click', (event) => {
