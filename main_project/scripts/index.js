@@ -19,7 +19,6 @@ async function fetchParks() {
     console.log(`Fetched ${parks.length} parks from server`);
     return parks;
   } catch (error) {
-
     console.error('Error fetching parks data:', error);
     return [];
   }
@@ -37,6 +36,11 @@ function createPopupContent(attributes) {
       const imgElement = document.createElement('img');
       imgElement.src = img.url;
       imgElement.alt = img.altText || attributes.fullName;
+      
+      imgElement.onerror = function() {
+        this.remove();
+      };
+      
       imagesDiv.appendChild(imgElement);
     });
     
@@ -92,6 +96,15 @@ function initializeMap() {
         minZoom: 3,
         maxZoom: 18,
         rotationEnabled: false
+      },
+      popup: {
+        dockEnabled: true,
+        dockOptions: {
+          buttonEnabled: false,
+          breakpoint: false,
+          position: "top-right"
+        },
+        alignment: "auto"
       }
     });
 
@@ -152,7 +165,7 @@ function initializeMap() {
                   ctx.clip();
                   ctx.drawImage(img, 0, 0, 50, 50);
                   
-                  ctx.strokeStyle = visited ? 'rgb(0, 0, 255)' : 'rgb(0, 255, 0)';
+                  ctx.strokeStyle = visited ? 'rgb(0, 0, 255)' : 'rgb(255, 0, 0)';
                   ctx.lineWidth = 4;
                   ctx.beginPath();
                   ctx.arc(25, 25, 23, 0, Math.PI * 2);
@@ -169,7 +182,7 @@ function initializeMap() {
                 
                 markerSymbol = {
                   type: 'simple-marker',
-                  color: visited ? [0, 0, 255] : [0, 255, 0],
+                  color: visited ? [0, 0, 255] : [255, 0, 0],
                   size: '12px',
                   outline: {
                     color: [255, 255, 255],
@@ -177,7 +190,7 @@ function initializeMap() {
                   }
                 };
               } else {
-                const markerColor = visited ? [0, 0, 255] : [0, 255, 0];
+                const markerColor = visited ? [0, 0, 255] : [255, 0, 0];
                 markerSymbol = {
                   type: 'simple-marker',
                   color: markerColor,
@@ -276,6 +289,3 @@ function initializeMap() {
     });
   });
 }
-
-// Trevor's code for wdd131
-
