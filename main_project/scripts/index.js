@@ -24,6 +24,52 @@ async function fetchParks() {
   }
 }
 
+function createPopupContent(attributes) {
+  const container = document.createElement('div');
+  container.className = 'popup-content';
+  
+  if (attributes.images && attributes.images.length > 0) {
+    const imagesDiv = document.createElement('div');
+    imagesDiv.className = 'popup-images';
+    
+    attributes.images.slice(0, 3).forEach(img => {
+      const imgElement = document.createElement('img');
+      imgElement.src = img.url;
+      imgElement.alt = img.altText || attributes.fullName;
+      imagesDiv.appendChild(imgElement);
+    });
+    
+    container.appendChild(imagesDiv);
+  }
+  
+  const description = document.createElement('p');
+  description.className = 'popup-description';
+  description.textContent = attributes.description || "No description available";
+  container.appendChild(description);
+  
+  const checkboxContainer = document.createElement('div');
+  checkboxContainer.className = 'popup-checkbox-container';
+  
+  const label = document.createElement('label');
+  label.className = 'checkbox-label';
+  
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.className = 'visited-checkbox';
+  checkbox.checked = attributes.visited;
+  checkbox.dataset.parkcode = attributes.parkCode;
+  
+  const span = document.createElement('span');
+  span.textContent = "I've been here!";
+  
+  label.appendChild(checkbox);
+  label.appendChild(span);
+  checkboxContainer.appendChild(label);
+  container.appendChild(checkboxContainer);
+  
+  return container;
+}
+
 function initializeMap() {
   require([
     'esri/Map',
@@ -155,29 +201,7 @@ function initializeMap() {
                 popupTemplate: {
                   title: "{fullName}",
                   content: function(feature) {
-                    const attrs = feature.graphic.attributes;
-                    let imageHTML = '';
-                    
-                    if (attrs.images && attrs.images.length > 0) {
-                      imageHTML = '<div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;">';
-                      attrs.images.slice(0, 3).forEach(img => {
-                        imageHTML += `<img src="${img.url}" alt="${img.altText}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px; border: 2px solid #ddd;">`;
-                      });
-                      imageHTML += '</div>';
-                    }
-                    
-                    const checked = attrs.visited ? 'checked' : '';
-                    
-                    return `
-                      ${imageHTML}
-                      <p style="margin-bottom: 15px;">${attrs.description}</p>
-                      <div style="padding: 10px; background: #f5f5f5; border-radius: 5px;">
-                        <label style="display: flex; align-items: center; cursor: pointer;">
-                          <input type="checkbox" class="visited-checkbox" data-parkcode="${attrs.parkCode}" ${checked} style="margin-right: 8px; width: 18px; height: 18px; cursor: pointer;">
-                          <span style="font-weight: 500;">I've been here!</span>
-                        </label>
-                      </div>
-                    `;
+                    return createPopupContent(feature.graphic.attributes);
                   }
                 }
               });

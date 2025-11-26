@@ -1,19 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>National Parks Application Access</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>National Parks Tracker</title>
+  <link rel="stylesheet" href="https://js.arcgis.com/4.32/esri/themes/light/main.css">
+  <link rel="stylesheet" href="styles.css">
 </head>
-
 <body>
-    <h1>Broski, check out this cool project</h1>
-<nav>
-  <a href="main_project/main.html">National Parks Application</a>
-</nav>  
+  <header>
+    <h1>National Parks Tracker</h1>
+    <p>Explore and track your visits to America's National Parks</p>
+  </header>
 
+  <main>
+    <div id="viewDiv"></div>
+  </main>
 
+  <!-- Popup Template (hidden, used by JS) -->
+  <template id="popup-template">
+    <div class="popup-content">
+      <div class="popup-images"></div>
+      <p class="popup-description"></p>
+      <div class="popup-checkbox-container">
+        <label class="checkbox-label">
+          <input type="checkbox" class="visited-checkbox">
+          <span>I've been here!</span>
+        </label>
+      </div>
+    </div>
+  </template>
 
-<p>Trevor Stephenson </p>     
+  <script src="https://js.arcgis.com/4.32/"></script>
+  <script src="index.js"></script>
 </body>
 </html>
