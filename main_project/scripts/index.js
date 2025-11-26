@@ -19,6 +19,7 @@ async function fetchParks() {
     console.log(`Fetched ${parks.length} parks from server`);
     return parks;
   } catch (error) {
+
     console.error('Error fetching parks data:', error);
     return [];
   }
@@ -275,3 +276,6 @@ function initializeMap() {
     });
   });
 }
+
+// Trevor's code for wdd131
+
