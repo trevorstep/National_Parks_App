@@ -83,6 +83,47 @@ function initializeMap() {
     'esri/layers/GraphicsLayer'
   ], function (Map, MapView, Graphic, GraphicsLayer) {
 
+    const imageCache = new Map();
+
+    function createCircularMarker(imageUrl, visited) {
+      const cacheKey = `${imageUrl}_${visited}`;
+      
+      if (imageCache.has(cacheKey)) {
+        return imageCache.get(cacheKey);
+      }
+
+      return new Promise((resolve) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 50;
+        canvas.height = 50;
+        const ctx = canvas.getContext('2d');
+        
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = function() {
+          ctx.beginPath();
+          ctx.arc(25, 25, 25, 0, Math.PI * 2);
+          ctx.closePath();
+          ctx.clip();
+          ctx.drawImage(img, 0, 0, 50, 50);
+          
+          ctx.strokeStyle = visited ? 'rgb(0, 0, 255)' : 'rgb(255, 0, 0)';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.arc(25, 25, 23, 0, Math.PI * 2);
+          ctx.stroke();
+          
+          const dataUrl = canvas.toDataURL();
+          imageCache.set(cacheKey, dataUrl);
+          resolve(dataUrl);
+        };
+        img.onerror = function() {
+          resolve(null);
+        };
+        img.src = imageUrl;
+      });
+    }
+
     const map = new Map({
       basemap: 'topo-vector'
     });
@@ -151,34 +192,16 @@ function initializeMap() {
               let markerSymbol;
               
               if (parkImage) {
-                const canvas = document.createElement('canvas');
-                canvas.width = 50;
-                canvas.height = 50;
-                const ctx = canvas.getContext('2d');
-                
-                const img = new Image();
-                img.crossOrigin = 'anonymous';
-                img.onload = function() {
-                  ctx.beginPath();
-                  ctx.arc(25, 25, 25, 0, Math.PI * 2);
-                  ctx.closePath();
-                  ctx.clip();
-                  ctx.drawImage(img, 0, 0, 50, 50);
-                  
-                  ctx.strokeStyle = visited ? 'rgb(0, 0, 255)' : 'rgb(255, 0, 0)';
-                  ctx.lineWidth = 4;
-                  ctx.beginPath();
-                  ctx.arc(25, 25, 23, 0, Math.PI * 2);
-                  ctx.stroke();
-                  
-                  marker.symbol = {
-                    type: 'picture-marker',
-                    url: canvas.toDataURL(),
-                    width: '50px',
-                    height: '50px'
-                  };
-                };
-                img.src = parkImage;
+                createCircularMarker(parkImage, visited).then((dataUrl) => {
+                  if (dataUrl) {
+                    marker.symbol = {
+                      type: 'picture-marker',
+                      url: dataUrl,
+                      width: '50px',
+                      height: '50px'
+                    };
+                  }
+                });
                 
                 markerSymbol = {
                   type: 'simple-marker',
