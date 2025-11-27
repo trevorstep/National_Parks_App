@@ -11,12 +11,20 @@
   <header>
     <h1>National Parks Tracker</h1>
     <p>Explore and track your visits to America's National Parks</p>
+    <div id="auth-container">
+      <button id="login-btn" style="display: none;">Sign in with Google</button>
+      <div id="user-info" style="display: none;">
+        <span id="user-name"></span>
+        <button id="logout-btn">Sign Out</button>
+      </div>
+    </div>
   </header>
 
   <main>
     <div id="viewDiv"></div>
   </main>
 
+  <!-- Popup Template (hidden, used by JS) -->
   <template id="popup-template">
     <div class="popup-content">
       <div class="popup-images"></div>

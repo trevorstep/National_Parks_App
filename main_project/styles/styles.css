@@ -28,6 +28,39 @@ header p {
   opacity: 0.95;
 }
 
+#auth-container {
+  margin-top: 15px;
+}
+
+#login-btn, #logout-btn {
+  background: white;
+  color: #2c5f2d;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+#login-btn:hover, #logout-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+#user-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+#user-name {
+  color: white;
+  font-weight: 500;
+  font-size: 1rem;
+}
+
 main {
   padding: 20px;
   max-width: 1600px;
