@@ -1,3 +1,23 @@
+import { initAuth, saveVisitedPark, removeVisitedPark, getVisitedParks } from './auth.js';
+
+let visitedParksSet = new Set();
+
+window.addEventListener('userLoggedIn', async (e) => {
+  visitedParksSet = await getVisitedParks();
+  if (window.mapInitialized) {
+    location.reload();
+  }
+});
+
+window.addEventListener('userLoggedOut', () => {
+  visitedParksSet = new Set();
+  if (window.mapInitialized) {
+    location.reload();
+  }
+});
+
+initAuth();
+
 fetch('/api/config')
   .then(response => response.json())
   .then(config => {
@@ -110,6 +130,8 @@ function initializeMap() {
       }
     });
 
+    window.mapInitialized = true;
+
     const graphicsLayer = new GraphicsLayer();
     map.add(graphicsLayer);
 
@@ -147,7 +169,7 @@ function initializeMap() {
               };
 
               const visitedKey = `park_visited_${park.parkCode}`;
-              const visited = localStorage.getItem(visitedKey) === 'true';
+              const visited = visitedParksSet.has(park.parkCode);
               
               const markerColor = visited ? [0, 0, 255] : [255, 0, 0];
               const markerSymbol = {
