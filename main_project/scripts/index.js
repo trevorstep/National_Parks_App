@@ -21,7 +21,7 @@ initAuth();
 fetch('/api/config')
   .then(response => response.json())
   .then(config => {
-    require(["esri/config"], function(esriConfig){
+    window.require(["esri/config"], function(esriConfig){
       esriConfig.apiKey = config.arcgisApiKey;
       console.log("API key configured");
       initializeMap();
