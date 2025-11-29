@@ -1,12 +1,14 @@
 import { initAuth, saveVisitedPark, removeVisitedPark, getVisitedParks } from './auth.js';
 
 let visitedParksSet = new Set();
+let isInitialLoad = true;
 
 window.addEventListener('userLoggedIn', async (e) => {
   visitedParksSet = await getVisitedParks();
-  if (window.mapInitialized) {
+  if (window.mapInitialized && !isInitialLoad) {
     location.reload();
   }
+  isInitialLoad = false;
 });
 
 window.addEventListener('userLoggedOut', () => {
@@ -21,7 +23,7 @@ initAuth();
 fetch('/api/config')
   .then(response => response.json())
   .then(config => {
-    window.require(["esri/config"], function(esriConfig){
+    require(["esri/config"], function(esriConfig){
       esriConfig.apiKey = config.arcgisApiKey;
       console.log("API key configured");
       initializeMap();
