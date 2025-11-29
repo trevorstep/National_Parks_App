@@ -1,4 +1,4 @@
-import { auth, provider, signInWithPopup, onAuthStateChanged, signOut, db, doc, setDoc, deleteDoc, collection, getDocs } from '../firebase-config.js';
+import { auth, provider, signInWithPopup, onAuthStateChanged, signOut, db, doc, setDoc, deleteDoc, collection, getDocs } from './firebase-config.js';
 
 let currentUser = null;
 
