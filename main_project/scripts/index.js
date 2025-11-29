@@ -289,21 +289,45 @@ function initializeMap() {
                 const checkbox = document.querySelector('.visited-checkbox');
                 if (checkbox && !checkbox.hasListener) {
                   checkbox.hasListener = true;
-                  checkbox.addEventListener('change', (e) => {
-                    const parkCode = graphic.attributes.parkCode;
-                    const isChecked = e.target.checked;
-                    const visitedKey = `park_visited_${parkCode}`;
+                 checkbox.addEventListener('click', async (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  e.stopImmediatePropagation();
+  
+  const parkCode = graphic.attributes.parkCode;
+  const isChecked = checkbox.checked;
 
-                    if (isChecked) {
-                      localStorage.setItem(visitedKey, 'true');
-                    } else {
-                      localStorage.removeItem(visitedKey);
-                    }
-                    
-                    graphic.attributes.visited = isChecked;
+  console.log(`Checkbox clicked: ${parkCode}, checked: ${isChecked}`);
 
-                    location.reload();
-                  });
+  try {
+    if (isChecked) {
+      await saveVisitedPark(parkCode);
+      visitedParksSet.add(parkCode);
+      console.log('Saved to Firestore');
+    } else {
+      await removeVisitedPark(parkCode);
+      visitedParksSet.delete(parkCode);
+      console.log('Removed from Firestore');
+    }
+    
+    graphic.attributes.visited = isChecked;
+
+    const newColor = isChecked ? [0, 0, 255] : [255, 0, 0];
+    graphic.symbol = {
+      type: 'simple-marker',
+      color: newColor,
+      size: '14px',
+      outline: {
+        color: [255, 255, 255],
+        width: 2
+      }
+    };
+    
+    console.log('Marker color updated successfully');
+  } catch (error) {
+    console.error('Error updating park:', error);
+  }
+});
                 }
               }, 100);
             }
