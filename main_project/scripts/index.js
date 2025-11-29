@@ -4,17 +4,21 @@ let visitedParksSet = new Set();
 let isInitialLoad = true;
 
 window.addEventListener('userLoggedIn', async (e) => {
+  console.log('userLoggedIn event fired, isInitialLoad:', isInitialLoad, 'mapInitialized:', window.mapInitialized);
   visitedParksSet = await getVisitedParks();
   console.log('Loaded visited parks:', visitedParksSet);
   if (window.mapInitialized && !isInitialLoad) {
+    console.log('RELOADING PAGE from userLoggedIn');
     location.reload();
   }
   isInitialLoad = false;
 });
 
 window.addEventListener('userLoggedOut', () => {
+  console.log('userLoggedOut event fired');
   visitedParksSet = new Set();
   if (window.mapInitialized) {
+    console.log('RELOADING PAGE from userLoggedOut');
     location.reload();
   }
 });
