@@ -15,7 +15,10 @@ export function initAuth() {
       userInfo.style.display = 'flex';
       userName.textContent = user.displayName;
       
-      window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: { userId: user.uid } }));
+      if (!window.userAuthInitialized) {
+        window.userAuthInitialized = true;
+        window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: { userId: user.uid } }));
+      }
     } else {
       currentUser = null;
       loginBtn.style.display = 'block';

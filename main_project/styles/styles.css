@@ -87,11 +87,39 @@ main {
   flex-wrap: wrap;
 }
 
+.popup-images img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid #ddd;
+  transition: transform 0.2s;
+}
+
+.popup-images img:hover {
+  transform: scale(1.05);
+  border-color: #2c5f2d;
+}
+
 .popup-images-hidden {
   display: flex;
   gap: 8px;
   margin-bottom: 15px;
   flex-wrap: wrap;
+}
+
+.popup-images-hidden img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid #ddd;
+  transition: transform 0.2s;
+}
+
+.popup-images-hidden img:hover {
+  transform: scale(1.05);
+  border-color: #2c5f2d;
 }
 
 .see-more-btn {
