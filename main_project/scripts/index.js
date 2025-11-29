@@ -5,6 +5,7 @@ let isInitialLoad = true;
 
 window.addEventListener('userLoggedIn', async (e) => {
   visitedParksSet = await getVisitedParks();
+  console.log('Loaded visited parks:', visitedParksSet);
   if (window.mapInitialized && !isInitialLoad) {
     location.reload();
   }
@@ -54,7 +55,10 @@ function createPopupContent(attributes) {
     const imagesDiv = document.createElement('div');
     imagesDiv.className = 'popup-images';
     
-    attributes.images.forEach(img => {
+    const visibleImages = attributes.images.slice(0, 3);
+    const hiddenImages = attributes.images.slice(3);
+    
+    visibleImages.forEach(img => {
       const imgElement = document.createElement('img');
       imgElement.src = img.url;
       imgElement.alt = img.altText || attributes.fullName;
@@ -67,7 +71,38 @@ function createPopupContent(attributes) {
       imagesDiv.appendChild(imgElement);
     });
     
-    container.appendChild(imagesDiv);
+    if (hiddenImages.length > 0) {
+      const hiddenDiv = document.createElement('div');
+      hiddenDiv.className = 'popup-images-hidden';
+      hiddenDiv.style.display = 'none';
+      
+      hiddenImages.forEach(img => {
+        const imgElement = document.createElement('img');
+        imgElement.src = img.url;
+        imgElement.alt = img.altText || attributes.fullName;
+        imgElement.loading = 'lazy';
+        
+        imgElement.onerror = function() {
+          this.remove();
+        };
+        
+        hiddenDiv.appendChild(imgElement);
+      });
+      
+      const seeMoreBtn = document.createElement('button');
+      seeMoreBtn.className = 'see-more-btn';
+      seeMoreBtn.textContent = `See ${hiddenImages.length} more photo${hiddenImages.length > 1 ? 's' : ''}`;
+      seeMoreBtn.onclick = function() {
+        hiddenDiv.style.display = 'flex';
+        this.style.display = 'none';
+      };
+      
+      container.appendChild(imagesDiv);
+      container.appendChild(seeMoreBtn);
+      container.appendChild(hiddenDiv);
+    } else {
+      container.appendChild(imagesDiv);
+    }
   }
   
   const description = document.createElement('p');

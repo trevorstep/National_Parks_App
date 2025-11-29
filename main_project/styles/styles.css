@@ -87,6 +87,30 @@ main {
   flex-wrap: wrap;
 }
 
+.popup-images-hidden {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+.see-more-btn {
+  background: #2c5f2d;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin-bottom: 15px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.see-more-btn:hover {
+  background: #1a3a1a;
+}
+
 .popup-images img {
   width: 100px;
   height: 100px;
