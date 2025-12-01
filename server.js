@@ -5,10 +5,10 @@ const path = require('path');
 const app = express();
 
 app.use(cors());
-app.use(express.static(__dirname));
+app.use(express.static(path.join(__dirname, 'main_project')));
 
 app.get("/", (request, response) => {
-    response.sendFile(path.join(__dirname, 'main.html'));
+    response.sendFile(path.join(__dirname, 'main_project', 'main.html'));
 });
 
 app.get("/api/config", (request, response) => {
