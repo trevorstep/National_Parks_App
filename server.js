@@ -17,6 +17,7 @@ app.get("/api/config", (request, response) => {
     });
 });
 
+
 app.get("/national-parks", async (request, response) => {
     try {
         console.log("Fetching National Parks...");
