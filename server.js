@@ -5,10 +5,10 @@ const path = require('path');
 const app = express();
 
 app.use(cors());
-app.use(express.static(path.join(__dirname, "main_project")));
+app.use(express.static(__dirname));
 
 app.get("/", (request, response) => {
-    response.sendFile(path.join(__dirname, 'main_project', 'index.html'));
+    response.sendFile(path.join(__dirname, 'main.html'));
 });
 
 app.get("/api/config", (request, response) => {
@@ -19,57 +19,45 @@ app.get("/api/config", (request, response) => {
 
 app.get("/national-parks", async (request, response) => {
     try {
-        console.log("Fetching parks...");
+        console.log("Fetching National Parks...");
         
-        const fetchAllParks = async () => {
-            let allParks = [];
-            let start = 0;
-            const limit = 50;
-            let hasMore = true;
-      
-            while (hasMore) {
-                console.log(`Fetching page starting at ${start}...`);
-                const res = await fetch(`https://developer.nps.gov/api/v1/parks?start=${start}&limit=${limit}&fields=images`, { 
-                    headers: { 'X-Api-Key': process.env.NATIONAL_API_KEY }
-                });
-      
-                if (!res.ok) throw new Error('Failed to fetch parks data');
-      
-                const data = await res.json();
-                console.log(`Received ${data.data.length} parks, total: ${data.total}`);
-                
-                // Log unique designations to see what we're getting
-                const designations = [...new Set(data.data.map(p => p.designation))];
-                console.log("Designations in this batch:", designations);
-      
-                if (data.data && data.data.length > 0) {
-                    // Filter for National Parks
-                    const nationalParks = data.data.filter(park => 
-                        park.designation === "National Park"
-                    );
-                    console.log(`Found ${nationalParks.length} National Parks in this batch`);
-                    allParks = allParks.concat(nationalParks);
-                } else {
-                    hasMore = false;
-                }
-      
-                // Check if there are more results
-                if (start + limit >= data.total) {
-                    hasMore = false;
-                }
-                
-                start += limit;
-            }
-            
-            console.log(`Total National Parks found: ${allParks.length}`);
-            return allParks;
-        };
+        const res = await fetch(`https://developer.nps.gov/api/v1/parks?limit=500`, { 
+            headers: { 'X-Api-Key': process.env.NATIONAL_API_KEY }
+        });
+
+        if (!res.ok) {
+            console.error('NPS API request failed:', res.status, res.statusText);
+            throw new Error('Failed to fetch parks data from NPS API');
+        }
+
+        const data = await res.json();
         
-        const nationalParks = await fetchAllParks();
+        if (!data.data) {
+            console.error('No data field in response');
+            throw new Error('Invalid response from NPS API');
+        }
+        
+        const nationalParks = data.data
+            .filter(park => park.designation === "National Park")
+            .map(park => ({
+                parkCode: park.parkCode,
+                fullName: park.fullName,
+                description: park.description,
+                latLong: park.latLong,
+                images: park.images ? park.images.slice(0, 6).map(img => ({
+                    url: img.url,
+                    altText: img.altText
+                })) : []
+            }));
+        
+        console.log(`Successfully processed ${nationalParks.length} National Parks`);
         response.json(nationalParks);
     } catch (error) {
-        console.error('Error fetching parks data:', error);
-        response.status(500).json({ error: 'Failed to fetch parks data' });
+        console.error('Error in /national-parks endpoint:', error.message);
+        response.status(500).json({ 
+            error: 'Failed to fetch parks data',
+            message: error.message 
+        });
     }
 });
 
