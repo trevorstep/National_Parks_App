@@ -64,12 +64,24 @@ function createPopupContent(attributes) {
     
     visibleImages.forEach(img => {
       const imgElement = document.createElement('img');
-      imgElement.src = img.url;
+      // Use low-res local URL if available, otherwise use original URL
+      imgElement.src = img.localUrlLow || img.url;
       imgElement.alt = img.altText || attributes.fullName;
       imgElement.loading = 'lazy';
       
+      // Store high-res URL for future use
+      if (img.localUrlHigh) {
+        imgElement.dataset.highRes = img.localUrlHigh;
+      }
+      
+      // Fallback to original URL if local image fails
       imgElement.onerror = function() {
-        this.remove();
+        if (img.originalUrl && this.src !== img.originalUrl) {
+          console.log(`Local image failed, falling back to original: ${img.url}`);
+          this.src = img.originalUrl || img.url;
+        } else {
+          this.remove();
+        }
       };
       
       imagesDiv.appendChild(imgElement);
@@ -82,12 +94,21 @@ function createPopupContent(attributes) {
       
       hiddenImages.forEach(img => {
         const imgElement = document.createElement('img');
-        imgElement.src = img.url;
+        imgElement.src = img.localUrlLow || img.url;
         imgElement.alt = img.altText || attributes.fullName;
         imgElement.loading = 'lazy';
         
+        // Store high-res URL for future use
+        if (img.localUrlHigh) {
+          imgElement.dataset.highRes = img.localUrlHigh;
+        }
+        
         imgElement.onerror = function() {
-          this.remove();
+          if (img.originalUrl && this.src !== img.originalUrl) {
+            this.src = img.originalUrl || img.url;
+          } else {
+            this.remove();
+          }
         };
         
         hiddenDiv.appendChild(imgElement);
@@ -289,45 +310,45 @@ function initializeMap() {
                 const checkbox = document.querySelector('.visited-checkbox');
                 if (checkbox && !checkbox.hasListener) {
                   checkbox.hasListener = true;
-                 checkbox.addEventListener('click', async (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  e.stopImmediatePropagation();
-  
-  const parkCode = graphic.attributes.parkCode;
-  const isChecked = checkbox.checked;
+                  checkbox.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    
+                    const parkCode = graphic.attributes.parkCode;
+                    const isChecked = checkbox.checked;
 
-  console.log(`Checkbox clicked: ${parkCode}, checked: ${isChecked}`);
+                    console.log(`Checkbox clicked: ${parkCode}, checked: ${isChecked}`);
 
-  try {
-    if (isChecked) {
-      await saveVisitedPark(parkCode);
-      visitedParksSet.add(parkCode);
-      console.log('Saved to Firestore');
-    } else {
-      await removeVisitedPark(parkCode);
-      visitedParksSet.delete(parkCode);
-      console.log('Removed from Firestore');
-    }
-    
-    graphic.attributes.visited = isChecked;
+                    try {
+                      if (isChecked) {
+                        await saveVisitedPark(parkCode);
+                        visitedParksSet.add(parkCode);
+                        console.log('Saved to Firestore');
+                      } else {
+                        await removeVisitedPark(parkCode);
+                        visitedParksSet.delete(parkCode);
+                        console.log('Removed from Firestore');
+                      }
+                      
+                      graphic.attributes.visited = isChecked;
 
-    const newColor = isChecked ? [0, 0, 255] : [255, 0, 0];
-    graphic.symbol = {
-      type: 'simple-marker',
-      color: newColor,
-      size: '14px',
-      outline: {
-        color: [255, 255, 255],
-        width: 2
-      }
-    };
-    
-    console.log('Marker color updated successfully');
-  } catch (error) {
-    console.error('Error updating park:', error);
-  }
-});
+                      const newColor = isChecked ? [0, 0, 255] : [255, 0, 0];
+                      graphic.symbol = {
+                        type: 'simple-marker',
+                        color: newColor,
+                        size: '14px',
+                        outline: {
+                          color: [255, 255, 255],
+                          width: 2
+                        }
+                      };
+                      
+                      console.log('Marker color updated successfully');
+                    } catch (error) {
+                      console.error('Error updating park:', error);
+                    }
+                  });
                 }
               }, 100);
             }
