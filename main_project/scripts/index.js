@@ -5,16 +5,18 @@ let isInitialLoad = true;
 let visitedParksLoaded = false;
 
 function updateProgressBar() {
-  const progressBar = document.getElementById('progress-bar');
-  if (!progressBar) return;
-  
+  const bar = document.getElementById('progress-bar');
+  const text = document.getElementById('progress-text');
+  if (!bar || !text) return;
+
   const totalParks = 63;
   const visitedCount = visitedParksSet.size;
   const percentage = Math.round((visitedCount / totalParks) * 100);
-  
-  progressBar.style.width = percentage + '%';
-  progressBar.innerHTML = `${visitedCount}/${totalParks} Parks (${percentage}%)`;
+
+  bar.style.width = percentage + '%';
+  text.innerHTML = `${visitedCount}/${totalParks} Parks (${percentage}%)`;
 }
+
 
 window.addEventListener('userLoggedIn', async (e) => {
   console.log('userLoggedIn event fired, isInitialLoad:', isInitialLoad, 'mapInitialized:', window.mapInitialized);
