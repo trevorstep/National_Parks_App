@@ -4,13 +4,26 @@ let visitedParksSet = new Set();
 let isInitialLoad = true;
 let visitedParksLoaded = false;
 
+function updateProgressBar() {
+  const progressBar = document.getElementById('progress-bar');
+  if (!progressBar) return;
+  
+  const totalParks = 63;
+  const visitedCount = visitedParksSet.size;
+  const percentage = Math.round((visitedCount / totalParks) * 100);
+  
+  progressBar.style.width = percentage + '%';
+  progressBar.innerHTML = `${visitedCount}/${totalParks} Parks (${percentage}%)`;
+}
+
 window.addEventListener('userLoggedIn', async (e) => {
   console.log('userLoggedIn event fired, isInitialLoad:', isInitialLoad, 'mapInitialized:', window.mapInitialized);
   visitedParksSet = await getVisitedParks();
   visitedParksLoaded = true;
   console.log('Loaded visited parks:', visitedParksSet);
   
-  // Dispatch event to notify map that visited parks are ready
+  updateProgressBar();
+  
   window.dispatchEvent(new CustomEvent('visitedParksLoaded', { detail: { visitedParks: visitedParksSet } }));
   
   if (window.mapInitialized && !isInitialLoad) {
@@ -24,6 +37,7 @@ window.addEventListener('userLoggedOut', () => {
   console.log('userLoggedOut event fired');
   visitedParksSet = new Set();
   visitedParksLoaded = false;
+  updateProgressBar();
   if (window.mapInitialized) {
     console.log('RELOADING PAGE from userLoggedOut');
     location.reload();
@@ -58,54 +72,6 @@ async function fetchParks() {
   }
 }
 
-
-// AAAAAAAAAAAAAAA
-
-
-var counter = 0;
-
-//function
-window.addEventListener(
-  "DOMContentLoaded",
-  (move = () => {
-    if (counter == 0) {
-      J = 1;
-      var elem = document.querySelector(".progress-done");
-      var width = 50;
-      var main = setInterval(frame, 50); 
-      var percentage = elem.getAttribute("data-done")
-      
-      function frame() {
-        if (width >= percentage) {
-          clearInterval(main);
-        } else { 
-          width++;
-          elem.style.width = width + "%";
-          elem.innerHTML = width + "%";
-        }
-      }
-    }
-  })
-);
-
-//or
-//   var  counter=0;
-//   setInterval(()=>{
-//   if (counter===100){
-//   clearInterval();
-//   }
-//   else{
-//   counter+=1;
-//   document.querySelector=(".progress-done").innerHTML=counter+"%";
-//     }
-
-//   },1000)
-
-
-
-
-
-
 function createPopupContent(attributes) {
   const container = document.createElement('div');
   container.className = 'popup-content';
@@ -119,17 +85,14 @@ function createPopupContent(attributes) {
     
     visibleImages.forEach(img => {
       const imgElement = document.createElement('img');
-      // Use low-res local URL if available, otherwise use original URL
       imgElement.src = img.localUrlLow || img.url;
       imgElement.alt = img.altText || attributes.fullName;
       imgElement.loading = 'lazy';
       
-      // Store high-res URL for future use
       if (img.localUrlHigh) {
         imgElement.dataset.highRes = img.localUrlHigh;
       }
       
-      // Fallback to original URL if local image fails
       imgElement.onerror = function() {
         if (img.originalUrl && this.src !== img.originalUrl) {
           console.log(`Local image failed, falling back to original: ${img.url}`);
@@ -153,7 +116,6 @@ function createPopupContent(attributes) {
         imgElement.alt = img.altText || attributes.fullName;
         imgElement.loading = 'lazy';
         
-        // Store high-res URL for future use
         if (img.localUrlHigh) {
           imgElement.dataset.highRes = img.localUrlHigh;
         }
@@ -255,13 +217,13 @@ function initializeMap() {
     view.when(async () => {
       console.log("Map view is ready");
       
-      // Wait for visited parks to load if user is logged in
       if (window.userAuthInitialized && !visitedParksLoaded) {
         console.log("User is logged in, waiting for visited parks to load...");
         await new Promise(resolve => {
           window.addEventListener('visitedParksLoaded', (event) => {
             console.log("Visited parks loaded event received, set size:", event.detail.visitedParks.size);
             visitedParksSet = event.detail.visitedParks;
+            updateProgressBar();
             resolve();
           }, { once: true });
         });
@@ -397,10 +359,12 @@ function initializeMap() {
                       if (isChecked) {
                         await saveVisitedPark(parkCode);
                         visitedParksSet.add(parkCode);
+                        updateProgressBar();
                         console.log('Saved to Firestore');
                       } else {
                         await removeVisitedPark(parkCode);
                         visitedParksSet.delete(parkCode);
+                        updateProgressBar();
                         console.log('Removed from Firestore');
                       }
                       
