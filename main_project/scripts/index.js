@@ -7,6 +7,10 @@ window.addEventListener('userLoggedIn', async (e) => {
   console.log('userLoggedIn event fired, isInitialLoad:', isInitialLoad, 'mapInitialized:', window.mapInitialized);
   visitedParksSet = await getVisitedParks();
   console.log('Loaded visited parks:', visitedParksSet);
+  
+  // Dispatch event to notify map that visited parks are ready
+  window.dispatchEvent(new CustomEvent('visitedParksLoaded', { detail: { visitedParks: visitedParksSet } }));
+  
   if (window.mapInitialized && !isInitialLoad) {
     console.log('RELOADING PAGE from userLoggedIn');
     location.reload();
@@ -197,8 +201,26 @@ function initializeMap() {
     const graphicsLayer = new GraphicsLayer();
     map.add(graphicsLayer);
 
-    view.when(() => {
+    view.when(async () => {
       console.log("Map view is ready");
+      
+      // Wait for visited parks to load if user is logged in
+      if (window.userAuthInitialized) {
+        console.log("User is logged in, waiting for visited parks...");
+        await new Promise(resolve => {
+          if (visitedParksSet && visitedParksSet.size >= 0) {
+            console.log("Visited parks already loaded");
+            resolve();
+          } else {
+            window.addEventListener('visitedParksLoaded', () => {
+              console.log("Visited parks loaded event received");
+              resolve();
+            }, { once: true });
+          }
+        });
+      }
+      
+      console.log("Creating markers with visitedParksSet:", visitedParksSet);
       
       fetchParks().then((parks) => {
         if (!parks || !Array.isArray(parks)) {
