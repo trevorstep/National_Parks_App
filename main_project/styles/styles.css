@@ -245,7 +245,7 @@ main {
   width: 0%;
 }
 
-.progress-text { /* NEW */
+.progress-text { 
   position: absolute;
   top: 0;
   left: 50%;
@@ -254,7 +254,7 @@ main {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: black;
   font-weight: bold;
   pointer-events: none;
 }
