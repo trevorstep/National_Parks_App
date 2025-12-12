@@ -2,10 +2,12 @@ import { initAuth, saveVisitedPark, removeVisitedPark, getVisitedParks } from '.
 
 let visitedParksSet = new Set();
 let isInitialLoad = true;
+let visitedParksLoaded = false;
 
 window.addEventListener('userLoggedIn', async (e) => {
   console.log('userLoggedIn event fired, isInitialLoad:', isInitialLoad, 'mapInitialized:', window.mapInitialized);
   visitedParksSet = await getVisitedParks();
+  visitedParksLoaded = true;
   console.log('Loaded visited parks:', visitedParksSet);
   
   // Dispatch event to notify map that visited parks are ready
@@ -21,6 +23,7 @@ window.addEventListener('userLoggedIn', async (e) => {
 window.addEventListener('userLoggedOut', () => {
   console.log('userLoggedOut event fired');
   visitedParksSet = new Set();
+  visitedParksLoaded = false;
   if (window.mapInitialized) {
     console.log('RELOADING PAGE from userLoggedOut');
     location.reload();
@@ -205,22 +208,22 @@ function initializeMap() {
       console.log("Map view is ready");
       
       // Wait for visited parks to load if user is logged in
-      if (window.userAuthInitialized) {
-        console.log("User is logged in, waiting for visited parks...");
+      if (window.userAuthInitialized && !visitedParksLoaded) {
+        console.log("User is logged in, waiting for visited parks to load...");
         await new Promise(resolve => {
-          if (visitedParksSet && visitedParksSet.size >= 0) {
-            console.log("Visited parks already loaded");
+          window.addEventListener('visitedParksLoaded', (event) => {
+            console.log("Visited parks loaded event received, set size:", event.detail.visitedParks.size);
+            visitedParksSet = event.detail.visitedParks;
             resolve();
-          } else {
-            window.addEventListener('visitedParksLoaded', () => {
-              console.log("Visited parks loaded event received");
-              resolve();
-            }, { once: true });
-          }
+          }, { once: true });
         });
+      } else if (visitedParksLoaded) {
+        console.log("Visited parks already loaded, size:", visitedParksSet.size);
+      } else {
+        console.log("No user logged in, proceeding without visited parks");
       }
       
-      console.log("Creating markers with visitedParksSet:", visitedParksSet);
+      console.log("Creating markers with visitedParksSet size:", visitedParksSet.size);
       
       fetchParks().then((parks) => {
         if (!parks || !Array.isArray(parks)) {
