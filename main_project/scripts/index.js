@@ -23,11 +23,11 @@ window.addEventListener('userLoggedIn', async (e) => {
   visitedParksSet = await getVisitedParks();
   visitedParksLoaded = true;
   console.log('Loaded visited parks:', visitedParksSet);
-  
+
   updateProgressBar();
-  
+
   window.dispatchEvent(new CustomEvent('visitedParksLoaded', { detail: { visitedParks: visitedParksSet } }));
-  
+
   if (window.mapInitialized && !isInitialLoad) {
     console.log('RELOADING PAGE from userLoggedIn');
     location.reload();
@@ -51,7 +51,7 @@ initAuth();
 fetch('/api/config')
   .then(response => response.json())
   .then(config => {
-    require(["esri/config"], function(esriConfig){
+    require(["esri/config"], function (esriConfig) {
       esriConfig.apiKey = config.arcgisApiKey;
       console.log("API key configured");
       initializeMap();
@@ -77,25 +77,25 @@ async function fetchParks() {
 function createPopupContent(attributes) {
   const container = document.createElement('div');
   container.className = 'popup-content';
-  
+
   if (attributes.images && attributes.images.length > 0) {
     const imagesDiv = document.createElement('div');
     imagesDiv.className = 'popup-images';
-    
+
     const visibleImages = attributes.images.slice(0, 3);
     const hiddenImages = attributes.images.slice(3);
-    
+
     visibleImages.forEach(img => {
       const imgElement = document.createElement('img');
       imgElement.src = img.localUrlLow || img.url;
       imgElement.alt = img.altText || attributes.fullName;
       imgElement.loading = 'lazy';
-      
+
       if (img.localUrlHigh) {
         imgElement.dataset.highRes = img.localUrlHigh;
       }
-      
-      imgElement.onerror = function() {
+
+      imgElement.onerror = function () {
         if (img.originalUrl && this.src !== img.originalUrl) {
           console.log(`Local image failed, falling back to original: ${img.url}`);
           this.src = img.originalUrl || img.url;
@@ -103,44 +103,44 @@ function createPopupContent(attributes) {
           this.remove();
         }
       };
-      
+
       imagesDiv.appendChild(imgElement);
     });
-    
+
     if (hiddenImages.length > 0) {
       const hiddenDiv = document.createElement('div');
       hiddenDiv.className = 'popup-images-hidden';
       hiddenDiv.style.display = 'none';
-      
+
       hiddenImages.forEach(img => {
         const imgElement = document.createElement('img');
         imgElement.src = img.localUrlLow || img.url;
         imgElement.alt = img.altText || attributes.fullName;
         imgElement.loading = 'lazy';
-        
+
         if (img.localUrlHigh) {
           imgElement.dataset.highRes = img.localUrlHigh;
         }
-        
-        imgElement.onerror = function() {
+
+        imgElement.onerror = function () {
           if (img.originalUrl && this.src !== img.originalUrl) {
             this.src = img.originalUrl || img.url;
           } else {
             this.remove();
           }
         };
-        
+
         hiddenDiv.appendChild(imgElement);
       });
-      
+
       const seeMoreBtn = document.createElement('button');
       seeMoreBtn.className = 'see-more-btn';
       seeMoreBtn.textContent = `See ${hiddenImages.length} more photo${hiddenImages.length > 1 ? 's' : ''}`;
-      seeMoreBtn.onclick = function() {
+      seeMoreBtn.onclick = function () {
         hiddenDiv.style.display = 'flex';
         this.style.display = 'none';
       };
-      
+
       container.appendChild(imagesDiv);
       container.appendChild(seeMoreBtn);
       container.appendChild(hiddenDiv);
@@ -148,32 +148,32 @@ function createPopupContent(attributes) {
       container.appendChild(imagesDiv);
     }
   }
-  
+
   const description = document.createElement('p');
   description.className = 'popup-description';
   description.textContent = attributes.description || "No description available";
   container.appendChild(description);
-  
+
   const checkboxContainer = document.createElement('div');
   checkboxContainer.className = 'popup-checkbox-container';
-  
+
   const label = document.createElement('label');
   label.className = 'checkbox-label';
-  
+
   const checkbox = document.createElement('input');
   checkbox.type = 'checkbox';
   checkbox.className = 'visited-checkbox';
   checkbox.checked = attributes.visited;
   checkbox.dataset.parkcode = attributes.parkCode;
-  
+
   const span = document.createElement('span');
   span.textContent = "I've been here!";
-  
+
   label.appendChild(checkbox);
   label.appendChild(span);
   checkboxContainer.appendChild(label);
   container.appendChild(checkboxContainer);
-  
+
   return container;
 }
 
@@ -218,7 +218,7 @@ function initializeMap() {
 
     view.when(async () => {
       console.log("Map view is ready");
-      
+
       if (window.userAuthInitialized && !visitedParksLoaded) {
         console.log("User is logged in, waiting for visited parks to load...");
         await new Promise(resolve => {
@@ -234,23 +234,23 @@ function initializeMap() {
       } else {
         console.log("No user logged in, proceeding without visited parks");
       }
-      
+
       console.log("Creating markers with visitedParksSet size:", visitedParksSet.size);
-      
+
       fetchParks().then((parks) => {
         if (!parks || !Array.isArray(parks)) {
           console.error("No parks data received");
           return;
         }
-        
+
         console.log(`Processing ${parks.length} parks...`);
         let addedCount = 0;
-        
+
         parks.forEach((park) => {
           if (park.latLong && park.latLong.trim() !== "") {
             const parts = park.latLong.split(",");
             let lat = null, lng = null;
-            
+
             parts.forEach(part => {
               const trimmed = part.trim();
               if (trimmed.startsWith("lat:")) {
@@ -269,7 +269,7 @@ function initializeMap() {
 
               const visitedKey = `park_visited_${park.parkCode}`;
               const visited = visitedParksSet.has(park.parkCode);
-              
+
               const markerColor = visited ? [0, 0, 255] : [255, 0, 0];
               const markerSymbol = {
                 type: 'simple-marker',
@@ -293,7 +293,7 @@ function initializeMap() {
                 },
                 popupTemplate: {
                   title: "{fullName}",
-                  content: function(feature) {
+                  content: function (feature) {
                     return createPopupContent(feature.graphic.attributes);
                   }
                 }
@@ -304,7 +304,7 @@ function initializeMap() {
             }
           }
         });
-        
+
         console.log(`Successfully added ${addedCount} markers to the map`);
       });
 
@@ -341,7 +341,7 @@ function initializeMap() {
         view.hitTest(event).then((response) => {
           if (response.results.length > 0) {
             const graphic = response.results[0].graphic;
-            
+
             if (graphic && graphic.layer === graphicsLayer) {
               setTimeout(() => {
                 const checkbox = document.querySelector('.visited-checkbox');
@@ -351,7 +351,7 @@ function initializeMap() {
                     e.preventDefault();
                     e.stopPropagation();
                     e.stopImmediatePropagation();
-                    
+
                     const parkCode = graphic.attributes.parkCode;
                     const isChecked = checkbox.checked;
 
@@ -369,7 +369,7 @@ function initializeMap() {
                         updateProgressBar();
                         console.log('Removed from Firestore');
                       }
-                      
+
                       graphic.attributes.visited = isChecked;
 
                       const newColor = isChecked ? [0, 0, 255] : [255, 0, 0];
@@ -382,7 +382,7 @@ function initializeMap() {
                           width: 2
                         }
                       };
-                      
+
                       console.log('Marker color updated successfully');
                     } catch (error) {
                       console.error('Error updating park:', error);
@@ -397,3 +397,115 @@ function initializeMap() {
     });
   });
 }
+
+
+
+
+// I made this for wdd131
+
+fetch("./data/nationalParks.json")
+  .then(response => response.json())
+  .then(data => {
+
+
+
+    const randomNum = Math.floor(Math.random() * data.length);
+    const parks_container = document.querySelector('#parks-container');
+    const form = document.querySelector('form');
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      search();
+    });
+
+
+
+    function init() {
+      renderParks(data[randomNum]);
+    }
+
+    function renderParks(data) {
+      let html = parkTemplate(data);
+      parks_container.innerHTML += html
+    }
+
+
+
+
+
+    function parkTemplate(data) {
+      return `
+        <div class="park-container">
+
+            <img class="park-img" src="/images/parks/low/${data.parkCode}_0.jpg" alt="${data.images[1].altText}">
+
+            <div class="park-contents">
+
+                <h2>${data.fullName}</h2>
+
+                <div class="description">${data.description}</div>
+
+                <p><strong>Activities:</strong> ${data.activities.slice(0, 3).join(", ")}</p>
+
+                <p><strong>Topics:</strong> ${data.topics.slice(0, 3).join(", ")}</p>
+
+                <details>
+                    <summary>Entrance Fees</summary>
+                    ${data.entranceFees.map(fee => `
+                        <div class="fee">
+                            <strong>${fee.title}</strong>: $${fee.cost}
+                            <p>${fee.description}</p>
+                        </div>
+                    `).join("")}
+                </details>
+
+            </div>
+
+        </div>
+    `;
+    }
+    // Data wrangling managed gracefully with the help of ChatGPT the rest I did.
+
+
+
+    function tagTemplate(tags) {
+      return tags.map((tag) => `<button>${tag}</button>`).join(' ');
+    }
+
+
+    function search() {
+      let dataQuery = document.querySelector('#search').value.toLowerCase();
+
+      let filteredParks = data.filter(function (data) {
+        return data.fullName.toLowerCase().includes(dataQuery) ||
+          data.parkCode.toLowerCase().includes(dataQuery) ||
+          data.description.toLowerCase().includes(dataQuery) ||
+          data.activities.some(tag => tag.toLowerCase().includes(dataQuery)) ||
+          data.topics.some(tag => tag.toLowerCase().includes(dataQuery)) ||
+          data.states.toLowerCase().includes(dataQuery);
+
+      })
+
+
+      function compareParks(ParkA, ParkB) {
+        if (ParkA.fullName < ParkB.fullName) {
+          return -1;
+        } else if (ParkA.fullName > ParkB.fullName) {
+          return 1;
+        }
+        return 0;
+      }
+
+      let sortedParks = filteredParks.sort(compareParks);
+
+      parks_container.innerHTML = '';
+
+      sortedParks.forEach(data => {
+        renderParks(data);
+      });
+    }
+    init();
+  })
+  .catch(err => console.error(err));
+
+

@@ -80,13 +80,14 @@ main {
 }
 
 #viewDiv {
-  width: 100%;
+  width: 90%;
   height: 70vh;
   min-height: 500px;
   border-radius: 10px;
   box-shadow: 0 4px 15px rgba(0,0,0,0.2);
   overflow: hidden;
   position: relative;
+  margin: 0 auto;
   z-index: 1;
 }
 
@@ -222,7 +223,7 @@ main {
 
 
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   header {
     padding: 20px 10px;
   }
@@ -287,8 +288,16 @@ main {
 
 /* Stuff I added for wdd 131 */
 
+
+    label {
+        display: flex;
+        justify-content: flex-end;
+        border: 2px solid black;
+        border-radius: 5px;
+    }
+
     #searching {
-        width: 30px;
+        width: 35px;
         height: auto;
         border-left: 2px solid black;
         padding: 10px;
