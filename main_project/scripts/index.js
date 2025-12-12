@@ -448,17 +448,6 @@ fetch("./data/nationalParks.json")
                 <p><strong>Activities:</strong> ${data.activities.slice(0, 3).join(", ")}</p>
 
                 <p><strong>Topics:</strong> ${data.topics.slice(0, 3).join(", ")}</p>
-
-                <details>
-                    <summary>Entrance Fees</summary>
-                    ${data.entranceFees.map(fee => `
-                        <div class="fee">
-                            <strong>${fee.title}</strong>: $${fee.cost}
-                            <p>${fee.description}</p>
-                        </div>
-                    `).join("")}
-                </details>
-
             </div>
 
         </div>
