@@ -115,6 +115,7 @@ main {
 width: 100%;
 height: auto;
 }
+
 .popup-images img:hover {
   transform: scale(1.05);
   border-color: #2c5f2d;
@@ -218,12 +219,26 @@ height: auto;
     outline: none;
 }
 
+footer {
+  background: linear-gradient(135deg, #97bc62 0%, #2c5f2d 100%);
+  color: white;
+  padding: 30px 20px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  position: relative;
+  text-align: center;
+}
 
 
+footer p {
+  text-align: center;
+  font-size: 1rem;
+  opacity: 0.9;
+}
 
-
-
-
+a {
+  font-size: 1rem;
+    color: white;
+}
 
 
 
@@ -314,3 +329,8 @@ height: auto;
         padding: 10px;
         outline: none;
     }
+
+  .park-search-img {
+width: 100%;
+height: auto;
+}
