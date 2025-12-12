@@ -58,6 +58,54 @@ async function fetchParks() {
   }
 }
 
+
+// AAAAAAAAAAAAAAA
+
+
+var counter = 0;
+
+//function
+window.addEventListener(
+  "DOMContentLoaded",
+  (move = () => {
+    if (counter == 0) {
+      J = 1;
+      var elem = document.querySelector(".progress-done");
+      var width = 50;
+      var main = setInterval(frame, 50); 
+      var percentage = elem.getAttribute("data-done")
+      
+      function frame() {
+        if (width >= percentage) {
+          clearInterval(main);
+        } else { 
+          width++;
+          elem.style.width = width + "%";
+          elem.innerHTML = width + "%";
+        }
+      }
+    }
+  })
+);
+
+//or
+//   var  counter=0;
+//   setInterval(()=>{
+//   if (counter===100){
+//   clearInterval();
+//   }
+//   else{
+//   counter+=1;
+//   document.querySelector=(".progress-done").innerHTML=counter+"%";
+//     }
+
+//   },1000)
+
+
+
+
+
+
 function createPopupContent(attributes) {
   const container = document.createElement('div');
   container.className = 'popup-content';
