@@ -437,7 +437,7 @@ fetch("./data/nationalParks.json")
       return `
         <div class="park-container">
 
-            <img class="park-img" src="/images/parks/low/${data.parkCode}_0.jpg" alt="${data.images?.[0]?.altText || data.fullName}"">
+            <img class="park-img park-search-img"class="park-img" src="/images/parks/low/${data.parkCode}_0.jpg" alt="${data.images?.[0]?.altText || data.fullName}"">
 
             <div class="park-contents">
 
