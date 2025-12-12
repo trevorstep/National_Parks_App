@@ -196,6 +196,32 @@ main {
   font-size: 1rem;
 }
 
+/* Stuff I added for wdd 131 */
+
+#searching {
+    width: 20px;
+    height: auto;
+    border-left: 2px solid black;
+    padding: 10px;
+    margin: 4px 0;
+}
+
+#search {
+    flex: 1;
+    border: none;
+    padding: 10px;
+    outline: none;
+}
+
+
+
+
+
+
+
+
+
+
 @media (max-width: 768px) {
   header {
     padding: 20px 10px;
@@ -258,3 +284,20 @@ main {
   font-weight: bold;
   pointer-events: none;
 }
+
+/* Stuff I added for wdd 131 */
+
+    #searching {
+        width: 30px;
+        height: auto;
+        border-left: 2px solid black;
+        padding: 10px;
+        margin: 4px 0;
+    }
+
+    #search {
+        flex: 1;
+        border: none;
+        padding: 10px;
+        outline: none;
+    }
