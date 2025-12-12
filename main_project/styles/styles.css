@@ -228,26 +228,23 @@ main {
 
 
 .progress {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: #ddd;
+  width: 100%;
   height: 30px;
-  width: 400px;
-  border-radius: 20px;
+  background-color: #e0e0e0;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
 .progress-done {
-  font-family: Verdana, Geneva, Tahoma, sans-serif;
-  font-weight: bolder;
-  color: #fff;
   height: 100%;
-  background: linear-gradient(to left, rgb(253, 2, 140), rgb(240, 199, 230));
-  border-radius: 20px;
-  display: grid;
-  place-items: center;
-  width: 0;
-  box-shadow: 0 0 3px -5px rgb(253, 2, 140), 0px 3px 150px rgb(253, 2, 140);
-  transition: width 0.5s ease;
+  background: linear-gradient(90deg, #2c5f2d 0%, #97bc62 100%);
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  transition: width 1s ease;
+  width: 0%; 
 }
