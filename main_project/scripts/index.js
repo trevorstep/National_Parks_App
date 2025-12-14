@@ -166,8 +166,9 @@ function initializeMap() {
     'esri/Map',
     'esri/views/MapView',
     'esri/Graphic',
-    'esri/layers/GraphicsLayer'
-  ], function (Map, MapView, Graphic, GraphicsLayer) {
+    'esri/layers/GraphicsLayer',
+    'esri/core/reactiveUtils'
+  ], function (Map, MapView, Graphic, GraphicsLayer, reactiveUtils) {
 
     const map = new Map({ basemap: 'topo-vector' });
 
@@ -233,11 +234,14 @@ function initializeMap() {
       });
 
       // Watch for popup opening
-      view.popup.watch('visible', (visible) => {
-        if (visible) {
-          setTimeout(attachCheckboxListener, 150);
+      reactiveUtils.watch(
+        () => view.popup.visible,
+        (visible) => {
+          if (visible) {
+            setTimeout(attachCheckboxListener, 150);
+          }
         }
-      });
+      );
     });
   });
 }
