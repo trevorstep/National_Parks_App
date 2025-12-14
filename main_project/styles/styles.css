@@ -349,8 +349,6 @@ input[type=submit]:hover {
     label {
         display: flex;
         justify-content: flex-end;
-        border: 2px solid black;
-        border-radius: 5px;
     }
 
     #searching {
