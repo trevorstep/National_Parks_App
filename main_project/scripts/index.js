@@ -21,7 +21,6 @@ window.addEventListener('userLoggedIn', async () => {
   visitedParksSet = await getVisitedParks();
   updateProgressBar();
 
-  // Reload map if already initialized (user logged in after page load)
   if (window.mapInitialized && !isInitialLoad) {
     location.reload();
   }
@@ -38,7 +37,6 @@ window.addEventListener('userLoggedOut', () => {
 
 initAuth();
 
-// Load API key and initialize map
 fetch('/api/config')
   .then(response => response.json())
   .then(config => {
@@ -116,13 +114,11 @@ function createPopupContent(attributes) {
     }
   }
 
-  // Description
   const description = document.createElement('p');
   description.className = 'popup-description';
   description.textContent = attributes.description || "No description available";
   container.appendChild(description);
 
-  // Checkbox
   const checkboxContainer = document.createElement('div');
   checkboxContainer.className = 'popup-checkbox-container';
 
@@ -233,7 +229,6 @@ function initializeMap() {
         }
       });
 
-      // Watch for popup opening
       reactiveUtils.watch(
         () => view.popup.visible,
         (visible) => {
@@ -246,7 +241,6 @@ function initializeMap() {
   });
 }
 
-// FIXED: Better checkbox handling
 function attachCheckboxListener() {
   const checkbox = document.querySelector('.visited-checkbox');
   if (!checkbox || checkbox.dataset.listenerAttached) return;
@@ -257,7 +251,6 @@ function attachCheckboxListener() {
     const parkCode = this.dataset.parkcode;
     const isChecked = this.checked;
     
-    // Disable checkbox during save
     this.disabled = true;
 
     try {
