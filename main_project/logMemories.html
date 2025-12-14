@@ -2,41 +2,60 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>National Parks Tracker</title>
-  <link rel="stylesheet" href="https://js.arcgis.com/4.32/esri/themes/light/main.css">
-  <link rel="stylesheet" href="styles/styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>National Parks Tracker</title>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.32/esri/themes/light/main.css">
+    <link rel="stylesheet" href="styles/styles.css">
 </head>
 
 <body>
-  <header>
-    <div class="header-content">
-      <h1>National Parks Tracker</h1>
-      <p>Explore and track your visits to America's National Parks</p>
-    </div>
-    <div id="auth-container">
-      <button id="login-btn" style="display: none;">Sign in with Google</button>
-      <div id="user-info" style="display: none;">
-        <span id="user-name"></span>
-        <button id="logout-btn">Sign Out</button>
-      </div>
-    </div>
-  </header>
+    <header>
+        <div class="header-content">
+            <h1>National Parks Tracker</h1>
+            <p>Explore and track your visits to America's National Parks</p>
+        </div>
+        <div id="auth-container">
+            <button id="login-btn" style="display: none;">Sign in with Google</button>
+            <div id="user-info" style="display: none;">
+                <span id="user-name"></span>
+                <button id="logout-btn">Sign Out</button>
+            </div>
+        </div>
+    </header>
 
-  <main>
+    <main>
 
- 
 
-  </main>
+        <h2>Log your Memories</h2>
 
-      <footer>
+        <form action="/action_page.php">
+            <label for="fname">First Name</label>
+            <input type="text" id="fname" name="firstname" placeholder="Your name..">
+
+            <label for="lname">Last Name</label>
+            <input type="text" id="lname" name="lastname" placeholder="Your last name..">
+
+            <label for="country">Country</label>
+            <select id="country" name="country">
+                <option value="australia">Australia</option>
+                <option value="canada">Canada</option>
+                <option value="usa">USA</option>
+            </select>
+
+            <input type="submit" value="Submit">
+        </form>
+
+
+    </main>
+
+    <footer>
         <a href="main.html">Home</a>
         <p>&copy; 2025</p>
     </footer>
 
-  <script src="https://js.arcgis.com/4.32/"></script>
-  <script type="module" src="scripts/index.js"></script>
+    <script src="https://js.arcgis.com/4.32/"></script>
+    <script type="module" src="scripts/index.js"></script>
 </body>
 
 </html>
