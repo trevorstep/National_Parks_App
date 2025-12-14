@@ -251,8 +251,10 @@ form {
   padding: 20px;
 }
 
-label {display: block;}
-
+label {
+  display: block;
+  
+}
 
 
 @media (max-width: 900px) {
@@ -272,12 +274,12 @@ label {display: block;}
     font-size: 0.95rem;
   }
 
-  #auth-container {
+#auth-container {
     position: static;
     transform: none;
-    margin-top: 15px;
-  }
-  
+    margin-top: auto;
+    text-align: center;
+}
   
   .popup-images img {
     width: 80px;

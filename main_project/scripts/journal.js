@@ -24,7 +24,15 @@ window.addEventListener('userLoggedOut', () => {
 
 async function loadParksIntoDropdown() {
   try {
-    const response = await fetch('/national-parks');
+    // Try the API endpoint first
+    let response = await fetch('/national-parks');
+    
+    // If that fails, try loading from the JSON file directly
+    if (!response.ok) {
+      console.log('API endpoint not available, loading from JSON file');
+      response = await fetch('./data/NationalParks.json');
+    }
+    
     const parks = await response.json();
     
     const select = document.getElementById('park-select');
@@ -43,6 +51,7 @@ async function loadParksIntoDropdown() {
     console.log(`Loaded ${parks.length} parks into dropdown`);
   } catch (error) {
     console.error('Error loading parks:', error);
+    alert('Failed to load parks list. Please refresh the page.');
   }
 }
 
@@ -66,7 +75,7 @@ form.addEventListener('submit', async (e) => {
     await saveJournalEntry(parkCode, parkName, description);
     alert('Entry saved successfully!');
     form.reset();
-    await loadAllEntries(); // Refresh entries
+    await loadAllEntries();
   } catch (error) {
     console.error('Error saving entry:', error);
     alert('Failed to save entry: ' + error.message);
@@ -132,7 +141,7 @@ function displayEntries(entries) {
       if (confirm('Are you sure you want to delete this entry?')) {
         try {
           await deleteJournalEntry(entryId);
-          await loadAllEntries(); // Refresh
+          await loadAllEntries();
         } catch (error) {
           alert('Failed to delete entry');
         }
