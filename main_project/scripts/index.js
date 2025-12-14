@@ -232,17 +232,11 @@ function initializeMap() {
         }
       });
 
-      // Handle checkbox clicks - USE EVENT DELEGATION
-      view.popup.on('trigger-action', () => {
-        setTimeout(attachCheckboxListener, 100);
-      });
-
-      view.on('click', (event) => {
-        view.hitTest(event).then((response) => {
-          if (response.results.length > 0 && response.results[0].graphic) {
-            setTimeout(attachCheckboxListener, 100);
-          }
-        });
+      // Watch for popup opening
+      view.popup.watch('visible', (visible) => {
+        if (visible) {
+          setTimeout(attachCheckboxListener, 150);
+        }
       });
     });
   });
@@ -286,7 +280,7 @@ function attachCheckboxListener() {
 }
 
 // Search functionality
-fetch("./data/NationalParks.json")
+fetch("./data/nationalParks.json")
   .then(response => response.json())
   .then(data => {
     const parks_container = document.querySelector('#parks-container');
