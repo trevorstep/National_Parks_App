@@ -433,26 +433,32 @@ fetch("./data/nationalParks.json")
 
 
 
-    function parkTemplate(data) {
-      return `
-        <div class="park-container">
+function parkTemplate(data) {
+  return `
+    <div class="park-container">
 
-            <img class="park-img park-search-img"class="park-img" src="/images/parks/low/${data.parkCode}_0.jpg" alt="${data.images?.[0]?.altText || data.fullName}"">
+      <picture>
+        <source media="(min-width: 901px)" 
+                srcset="/images/parks/high/${data.parkCode}_0.jpg">
+        <img class="park-img park-search-img" 
+             src="/images/parks/low/${data.parkCode}_0.jpg"
+             alt="${data.images?.[0]?.altText || data.fullName}">
+      </picture>
+      
+      <div class="park-contents">
 
-            <div class="park-contents">
+        <h2>${data.fullName}</h2>
 
-                <h2>${data.fullName}</h2>
+        <div class="description">${data.description}</div>
 
-                <div class="description">${data.description}</div>
+        <p><strong>Activities:</strong> ${data.activities.slice(0, 3).join(", ")}</p>
 
-                <p><strong>Activities:</strong> ${data.activities.slice(0, 3).join(", ")}</p>
+        <p><strong>Topics:</strong> ${data.topics.slice(0, 3).join(", ")}</p>
+      </div>
 
-                <p><strong>Topics:</strong> ${data.topics.slice(0, 3).join(", ")}</p>
-            </div>
-
-        </div>
-    `;
-    }
+    </div>
+`;
+}
     // Data wrangling managed gracefully with the help of ChatGPT the rest I did.
 
 
