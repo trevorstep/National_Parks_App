@@ -256,6 +256,10 @@ label {
   
 }
 
+hr{
+  margin: 5px;
+}
+
 
 @media (max-width: 900px) {
   header {
