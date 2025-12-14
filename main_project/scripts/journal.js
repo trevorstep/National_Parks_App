@@ -1,6 +1,5 @@
 import { initAuth } from './auth.js';
-import { auth, db } from './firebase-config.js';
-import { collection, addDoc, query, where, orderBy, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { auth, db, collection, addDoc, query, where, orderBy, getDocs, deleteDoc, doc } from './firebase-config.js';
 
 initAuth();
 
