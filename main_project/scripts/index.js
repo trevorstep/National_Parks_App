@@ -456,6 +456,8 @@ function parkTemplate(data) {
         <p><strong>Topics:</strong> ${data.topics.slice(0, 3).join(", ")}</p>
       </div>
 
+      <hr> 
+
     </div>
 `;
 }
