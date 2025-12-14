@@ -2,7 +2,7 @@ import { initAuth, saveVisitedPark, removeVisitedPark, getVisitedParks } from '.
 
 let visitedParksSet = new Set();
 let isInitialLoad = true;
-let visitedParksLoaded = false;
+let graphicsLayerRef = null;
 
 function updateProgressBar() {
   const bar = document.getElementById('progress-bar');
@@ -17,57 +17,43 @@ function updateProgressBar() {
   text.innerHTML = `${visitedCount}/${totalParks} Parks (${percentage}%)`;
 }
 
-
-window.addEventListener('userLoggedIn', async (e) => {
-  console.log('userLoggedIn event fired, isInitialLoad:', isInitialLoad, 'mapInitialized:', window.mapInitialized);
+window.addEventListener('userLoggedIn', async () => {
   visitedParksSet = await getVisitedParks();
-  visitedParksLoaded = true;
-  console.log('Loaded visited parks:', visitedParksSet);
-
   updateProgressBar();
 
-  window.dispatchEvent(new CustomEvent('visitedParksLoaded', { detail: { visitedParks: visitedParksSet } }));
-
+  // Reload map if already initialized (user logged in after page load)
   if (window.mapInitialized && !isInitialLoad) {
-    console.log('RELOADING PAGE from userLoggedIn');
     location.reload();
   }
   isInitialLoad = false;
 });
 
 window.addEventListener('userLoggedOut', () => {
-  console.log('userLoggedOut event fired');
   visitedParksSet = new Set();
-  visitedParksLoaded = false;
   updateProgressBar();
   if (window.mapInitialized) {
-    console.log('RELOADING PAGE from userLoggedOut');
     location.reload();
   }
 });
 
 initAuth();
 
+// Load API key and initialize map
 fetch('/api/config')
   .then(response => response.json())
   .then(config => {
     require(["esri/config"], function (esriConfig) {
       esriConfig.apiKey = config.arcgisApiKey;
-      console.log("API key configured");
       initializeMap();
     });
   })
-  .catch(error => {
-    console.error('Error fetching API key:', error);
-  });
+  .catch(error => console.error('Error fetching API key:', error));
 
 async function fetchParks() {
   try {
     const response = await fetch('/national-parks');
     if (!response.ok) throw new Error('Failed to fetch parks data');
-    const parks = await response.json();
-    console.log(`Fetched ${parks.length} parks from server`);
-    return parks;
+    return await response.json();
   } catch (error) {
     console.error('Error fetching parks data:', error);
     return [];
@@ -78,6 +64,7 @@ function createPopupContent(attributes) {
   const container = document.createElement('div');
   container.className = 'popup-content';
 
+  // Images
   if (attributes.images && attributes.images.length > 0) {
     const imagesDiv = document.createElement('div');
     imagesDiv.className = 'popup-images';
@@ -90,22 +77,14 @@ function createPopupContent(attributes) {
       imgElement.src = img.localUrlLow || img.url;
       imgElement.alt = img.altText || attributes.fullName;
       imgElement.loading = 'lazy';
-
-      if (img.localUrlHigh) {
-        imgElement.dataset.highRes = img.localUrlHigh;
-      }
-
-      imgElement.onerror = function () {
-        if (img.originalUrl && this.src !== img.originalUrl) {
-          console.log(`Local image failed, falling back to original: ${img.url}`);
-          this.src = img.originalUrl || img.url;
-        } else {
-          this.remove();
-        }
+      imgElement.onerror = () => {
+        if (img.originalUrl) imgElement.src = img.originalUrl;
+        else imgElement.remove();
       };
-
       imagesDiv.appendChild(imgElement);
     });
+
+    container.appendChild(imagesDiv);
 
     if (hiddenImages.length > 0) {
       const hiddenDiv = document.createElement('div');
@@ -117,43 +96,33 @@ function createPopupContent(attributes) {
         imgElement.src = img.localUrlLow || img.url;
         imgElement.alt = img.altText || attributes.fullName;
         imgElement.loading = 'lazy';
-
-        if (img.localUrlHigh) {
-          imgElement.dataset.highRes = img.localUrlHigh;
-        }
-
-        imgElement.onerror = function () {
-          if (img.originalUrl && this.src !== img.originalUrl) {
-            this.src = img.originalUrl || img.url;
-          } else {
-            this.remove();
-          }
+        imgElement.onerror = () => {
+          if (img.originalUrl) imgElement.src = img.originalUrl;
+          else imgElement.remove();
         };
-
         hiddenDiv.appendChild(imgElement);
       });
 
       const seeMoreBtn = document.createElement('button');
       seeMoreBtn.className = 'see-more-btn';
       seeMoreBtn.textContent = `See ${hiddenImages.length} more photo${hiddenImages.length > 1 ? 's' : ''}`;
-      seeMoreBtn.onclick = function () {
+      seeMoreBtn.onclick = () => {
         hiddenDiv.style.display = 'flex';
-        this.style.display = 'none';
+        seeMoreBtn.style.display = 'none';
       };
 
-      container.appendChild(imagesDiv);
       container.appendChild(seeMoreBtn);
       container.appendChild(hiddenDiv);
-    } else {
-      container.appendChild(imagesDiv);
     }
   }
 
+  // Description
   const description = document.createElement('p');
   description.className = 'popup-description';
   description.textContent = attributes.description || "No description available";
   container.appendChild(description);
 
+  // Checkbox
   const checkboxContainer = document.createElement('div');
   checkboxContainer.className = 'popup-checkbox-container';
 
@@ -177,220 +146,101 @@ function createPopupContent(attributes) {
   return container;
 }
 
+function updateMarkerColor(parkCode, visited) {
+  if (!graphicsLayerRef) return;
+  
+  const graphic = graphicsLayerRef.graphics.find(g => g.attributes.parkCode === parkCode);
+  if (graphic) {
+    graphic.attributes.visited = visited;
+    graphic.symbol = {
+      type: 'simple-marker',
+      color: visited ? [0, 0, 255] : [255, 0, 0],
+      size: '14px',
+      outline: { color: [255, 255, 255], width: 2 }
+    };
+  }
+}
+
 function initializeMap() {
   require([
     'esri/Map',
     'esri/views/MapView',
     'esri/Graphic',
-    'esri/layers/GraphicsLayer',
-    'esri/core/reactiveUtils'
-  ], function (Map, MapView, Graphic, GraphicsLayer, reactiveUtils) {
+    'esri/layers/GraphicsLayer'
+  ], function (Map, MapView, Graphic, GraphicsLayer) {
 
-    const map = new Map({
-      basemap: 'topo-vector'
-    });
+    const map = new Map({ basemap: 'topo-vector' });
 
     const view = new MapView({
       container: 'viewDiv',
       map: map,
       center: [-98.5795, 39.8283],
       zoom: 4,
-      constraints: {
-        minZoom: 3,
-        maxZoom: 18,
-        rotationEnabled: false
-      },
+      constraints: { minZoom: 3, maxZoom: 18, rotationEnabled: false },
       popup: {
         dockEnabled: true,
-        dockOptions: {
-          buttonEnabled: false,
-          breakpoint: false,
-          position: "top-right"
-        },
+        dockOptions: { buttonEnabled: false, breakpoint: false, position: "top-right" },
         alignment: "auto"
       }
     });
 
     window.mapInitialized = true;
-
-    const graphicsLayer = new GraphicsLayer();
-    map.add(graphicsLayer);
+    graphicsLayerRef = new GraphicsLayer();
+    map.add(graphicsLayerRef);
 
     view.when(async () => {
-      console.log("Map view is ready");
+      const parks = await fetchParks();
+      if (!parks || !Array.isArray(parks)) return;
 
-      if (window.userAuthInitialized && !visitedParksLoaded) {
-        console.log("User is logged in, waiting for visited parks to load...");
-        await new Promise(resolve => {
-          window.addEventListener('visitedParksLoaded', (event) => {
-            console.log("Visited parks loaded event received, set size:", event.detail.visitedParks.size);
-            visitedParksSet = event.detail.visitedParks;
-            updateProgressBar();
-            resolve();
-          }, { once: true });
-        });
-      } else if (visitedParksLoaded) {
-        console.log("Visited parks already loaded, size:", visitedParksSet.size);
-      } else {
-        console.log("No user logged in, proceeding without visited parks");
-      }
+      parks.forEach((park) => {
+        if (!park.latLong) return;
 
-      console.log("Creating markers with visitedParksSet size:", visitedParksSet.size);
+        const parts = park.latLong.split(",");
+        let lat = null, lng = null;
 
-      fetchParks().then((parks) => {
-        if (!parks || !Array.isArray(parks)) {
-          console.error("No parks data received");
-          return;
-        }
-
-        console.log(`Processing ${parks.length} parks...`);
-        let addedCount = 0;
-
-        parks.forEach((park) => {
-          if (park.latLong && park.latLong.trim() !== "") {
-            const parts = park.latLong.split(",");
-            let lat = null, lng = null;
-
-            parts.forEach(part => {
-              const trimmed = part.trim();
-              if (trimmed.startsWith("lat:")) {
-                lat = parseFloat(trimmed.split("lat:")[1]);
-              } else if (trimmed.startsWith("long:")) {
-                lng = parseFloat(trimmed.split("long:")[1]);
-              }
-            });
-
-            if (lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng)) {
-              const point = {
-                type: 'point',
-                longitude: lng,
-                latitude: lat
-              };
-
-              const visitedKey = `park_visited_${park.parkCode}`;
-              const visited = visitedParksSet.has(park.parkCode);
-
-              const markerColor = visited ? [0, 0, 255] : [255, 0, 0];
-              const markerSymbol = {
-                type: 'simple-marker',
-                color: markerColor,
-                size: '14px',
-                outline: {
-                  color: [255, 255, 255],
-                  width: 2
-                }
-              };
-
-              const marker = new Graphic({
-                geometry: point,
-                symbol: markerSymbol,
-                attributes: {
-                  parkCode: park.parkCode,
-                  fullName: park.fullName,
-                  description: park.description || "No description available",
-                  visited: visited,
-                  images: park.images || []
-                },
-                popupTemplate: {
-                  title: "{fullName}",
-                  content: function (feature) {
-                    return createPopupContent(feature.graphic.attributes);
-                  }
-                }
-              });
-
-              graphicsLayer.add(marker);
-              addedCount++;
-            }
-          }
+        parts.forEach(part => {
+          const trimmed = part.trim();
+          if (trimmed.startsWith("lat:")) lat = parseFloat(trimmed.split("lat:")[1]);
+          else if (trimmed.startsWith("long:")) lng = parseFloat(trimmed.split("long:")[1]);
         });
 
-        console.log(`Successfully added ${addedCount} markers to the map`);
-      });
+        if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
+          const visited = visitedParksSet.has(park.parkCode);
 
-      reactiveUtils.watch(
-        () => view.zoom,
-        (newZoom) => {
-          const scale = Math.max(0.5, Math.min(1.5, newZoom / 6));
-          graphicsLayer.graphics.forEach((graphic) => {
-            if (graphic.symbol.type === 'picture-marker') {
-              const currentUrl = graphic.symbol.url;
-              graphic.symbol = {
-                type: 'picture-marker',
-                url: currentUrl,
-                width: `${50 * scale}px`,
-                height: `${50 * scale}px`
-              };
-            } else {
-              const currentColor = graphic.symbol.color;
-              graphic.symbol = {
-                type: 'simple-marker',
-                color: currentColor,
-                size: `${12 * scale}px`,
-                outline: {
-                  color: [255, 255, 255],
-                  width: 1
-                }
-              };
+          const marker = new Graphic({
+            geometry: { type: 'point', longitude: lng, latitude: lat },
+            symbol: {
+              type: 'simple-marker',
+              color: visited ? [0, 0, 255] : [255, 0, 0],
+              size: '14px',
+              outline: { color: [255, 255, 255], width: 2 }
+            },
+            attributes: {
+              parkCode: park.parkCode,
+              fullName: park.fullName,
+              description: park.description || "No description available",
+              visited: visited,
+              images: park.images || []
+            },
+            popupTemplate: {
+              title: "{fullName}",
+              content: (feature) => createPopupContent(feature.graphic.attributes)
             }
           });
+
+          graphicsLayerRef.add(marker);
         }
-      );
+      });
+
+      // Handle checkbox clicks - USE EVENT DELEGATION
+      view.popup.on('trigger-action', () => {
+        setTimeout(attachCheckboxListener, 100);
+      });
 
       view.on('click', (event) => {
         view.hitTest(event).then((response) => {
-          if (response.results.length > 0) {
-            const graphic = response.results[0].graphic;
-
-            if (graphic && graphic.layer === graphicsLayer) {
-              setTimeout(() => {
-                const checkbox = document.querySelector('.visited-checkbox');
-                if (checkbox && !checkbox.hasListener) {
-                  checkbox.hasListener = true;
-                  checkbox.addEventListener('click', async (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
-
-                    const parkCode = graphic.attributes.parkCode;
-                    const isChecked = checkbox.checked;
-
-                    console.log(`Checkbox clicked: ${parkCode}, checked: ${isChecked}`);
-
-                    try {
-                      if (isChecked) {
-                        await saveVisitedPark(parkCode);
-                        visitedParksSet.add(parkCode);
-                        updateProgressBar();
-                        console.log('Saved to Firestore');
-                      } else {
-                        await removeVisitedPark(parkCode);
-                        visitedParksSet.delete(parkCode);
-                        updateProgressBar();
-                        console.log('Removed from Firestore');
-                      }
-
-                      graphic.attributes.visited = isChecked;
-
-                      const newColor = isChecked ? [0, 0, 255] : [255, 0, 0];
-                      graphic.symbol = {
-                        type: 'simple-marker',
-                        color: newColor,
-                        size: '14px',
-                        outline: {
-                          color: [255, 255, 255],
-                          width: 2
-                        }
-                      };
-
-                      console.log('Marker color updated successfully');
-                    } catch (error) {
-                      console.error('Error updating park:', error);
-                    }
-                  });
-                }
-              }, 100);
-            }
+          if (response.results.length > 0 && response.results[0].graphic) {
+            setTimeout(attachCheckboxListener, 100);
           }
         });
       });
@@ -398,111 +248,92 @@ function initializeMap() {
   });
 }
 
+// FIXED: Better checkbox handling
+function attachCheckboxListener() {
+  const checkbox = document.querySelector('.visited-checkbox');
+  if (!checkbox || checkbox.dataset.listenerAttached) return;
 
+  checkbox.dataset.listenerAttached = 'true';
+  
+  checkbox.addEventListener('change', async function(e) {
+    const parkCode = this.dataset.parkcode;
+    const isChecked = this.checked;
+    
+    // Disable checkbox during save
+    this.disabled = true;
 
+    try {
+      if (isChecked) {
+        await saveVisitedPark(parkCode);
+        visitedParksSet.add(parkCode);
+      } else {
+        await removeVisitedPark(parkCode);
+        visitedParksSet.delete(parkCode);
+      }
 
-// I made this for wdd131
+      updateProgressBar();
+      updateMarkerColor(parkCode, isChecked);
+      console.log(`Park ${parkCode} ${isChecked ? 'saved' : 'removed'}`);
+    } catch (error) {
+      console.error('Error updating park:', error);
+      // Revert checkbox on error
+      this.checked = !isChecked;
+      alert('Failed to update. Please try again.');
+    } finally {
+      this.disabled = false;
+    }
+  });
+}
 
-fetch("./data/nationalParks.json")
+// Search functionality
+fetch("./data/NationalParks.json")
   .then(response => response.json())
   .then(data => {
-
-
-
-    const randomNum = Math.floor(Math.random() * data.length);
     const parks_container = document.querySelector('#parks-container');
     const form = document.querySelector('form');
 
-    form.addEventListener('submit', function (event) {
-      event.preventDefault();
-      search();
+    // Show random park on load
+    const randomPark = data[Math.floor(Math.random() * data.length)];
+    parks_container.innerHTML = parkTemplate(randomPark);
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const searchTerm = document.querySelector('#search').value.toLowerCase();
+
+      const filtered = data.filter(park =>
+        park.fullName.toLowerCase().includes(searchTerm) ||
+        park.parkCode.toLowerCase().includes(searchTerm) ||
+        park.description.toLowerCase().includes(searchTerm) ||
+        park.activities.some(a => a.toLowerCase().includes(searchTerm)) ||
+        park.topics.some(t => t.toLowerCase().includes(searchTerm)) ||
+        park.states.toLowerCase().includes(searchTerm)
+      );
+
+      const sorted = filtered.sort((a, b) => a.fullName.localeCompare(b.fullName));
+      
+      parks_container.innerHTML = '';
+      sorted.forEach(park => parks_container.innerHTML += parkTemplate(park));
     });
-
-
-
-    function init() {
-      renderParks(data[randomNum]);
-    }
-
-    function renderParks(data) {
-      let html = parkTemplate(data);
-      parks_container.innerHTML += html
-    }
-
-
-
-
+  })
+  .catch(err => console.error(err));
 
 function parkTemplate(data) {
   return `
     <div class="park-container">
-
       <picture>
-        <source media="(min-width: 901px)" 
-                srcset="/images/parks/high/${data.parkCode}_0.jpg">
+        <source media="(min-width: 901px)" srcset="/images/parks/high/${data.parkCode}_0.jpg">
         <img class="park-img park-search-img" 
              src="/images/parks/low/${data.parkCode}_0.jpg"
              alt="${data.images?.[0]?.altText || data.fullName}">
       </picture>
       
       <div class="park-contents">
-
         <h2>${data.fullName}</h2>
-
         <div class="description">${data.description}</div>
-
         <p><strong>Activities:</strong> ${data.activities.slice(0, 3).join(", ")}</p>
-
         <p><strong>Topics:</strong> ${data.topics.slice(0, 3).join(", ")}</p>
       </div>
-
       <hr> 
-
     </div>
-`;
+  `;
 }
-    // Data wrangling managed gracefully with the help of ChatGPT the rest I did.
-
-
-
-    function tagTemplate(tags) {
-      return tags.map((tag) => `<button>${tag}</button>`).join(' ');
-    }
-
-
-    function search() {
-      let dataQuery = document.querySelector('#search').value.toLowerCase();
-
-      let filteredParks = data.filter(function (data) {
-        return data.fullName.toLowerCase().includes(dataQuery) ||
-          data.parkCode.toLowerCase().includes(dataQuery) ||
-          data.description.toLowerCase().includes(dataQuery) ||
-          data.activities.some(tag => tag.toLowerCase().includes(dataQuery)) ||
-          data.topics.some(tag => tag.toLowerCase().includes(dataQuery)) ||
-          data.states.toLowerCase().includes(dataQuery);
-
-      })
-
-
-      function compareParks(ParkA, ParkB) {
-        if (ParkA.fullName < ParkB.fullName) {
-          return -1;
-        } else if (ParkA.fullName > ParkB.fullName) {
-          return 1;
-        }
-        return 0;
-      }
-
-      let sortedParks = filteredParks.sort(compareParks);
-
-      parks_container.innerHTML = '';
-
-      sortedParks.forEach(data => {
-        renderParks(data);
-      });
-    }
-    init();
-  })
-  .catch(err => console.error(err));
-
-
