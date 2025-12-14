@@ -276,14 +276,12 @@ function attachCheckboxListener() {
   });
 }
 
-// Search functionality
 fetch("./data/nationalParks.json")
   .then(response => response.json())
   .then(data => {
     const parks_container = document.querySelector('#parks-container');
     const form = document.querySelector('form');
 
-    // Show random park on load
     const randomPark = data[Math.floor(Math.random() * data.length)];
     parks_container.innerHTML = parkTemplate(randomPark);
 
