@@ -1,12 +1,70 @@
 import { initAuth } from './auth.js';
-import { 
-  saveJournalEntry, 
-  getAllJournalEntries, 
-  deleteJournalEntry,
-  formatEntryDate 
-} from './journal.js';
+import { auth, db } from './firebase-config.js';
+import { collection, addDoc, query, where, orderBy, getDocs, deleteDoc, doc } from 'firebase/firestore';
 
 initAuth();
+
+// Journal functions
+async function saveJournalEntry(parkCode, parkName, description) {
+  const user = auth.currentUser;
+  if (!user) throw new Error('You must be logged in to save journal entries');
+  if (!description || description.trim() === '') throw new Error('Journal entry cannot be empty');
+
+  const entryData = {
+    userId: user.uid,
+    parkCode: parkCode,
+    parkName: parkName,
+    description: description.trim(),
+    createdAt: new Date(),
+    timestamp: Date.now()
+  };
+
+  const docRef = await addDoc(collection(db, 'journalEntries'), entryData);
+  console.log('Journal entry saved:', docRef.id);
+  return docRef.id;
+}
+
+async function getAllJournalEntries() {
+  const user = auth.currentUser;
+  if (!user) return [];
+
+  const q = query(
+    collection(db, 'journalEntries'),
+    where('userId', '==', user.uid),
+    orderBy('timestamp', 'desc')
+  );
+
+  const querySnapshot = await getDocs(q);
+  const entries = [];
+
+  querySnapshot.forEach((doc) => {
+    entries.push({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate() || new Date(doc.data().timestamp)
+    });
+  });
+
+  return entries;
+}
+
+async function deleteJournalEntry(entryId) {
+  const user = auth.currentUser;
+  if (!user) throw new Error('You must be logged in to delete entries');
+  await deleteDoc(doc(db, 'journalEntries', entryId));
+  console.log('Entry deleted:', entryId);
+}
+
+function formatEntryDate(date) {
+  const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+  const timeOptions = { hour: 'numeric', minute: '2-digit', hour12: true };
+
+  return {
+    date: date.toLocaleDateString('en-US', dateOptions),
+    time: date.toLocaleTimeString('en-US', timeOptions),
+    full: `${date.toLocaleDateString('en-US', dateOptions)} at ${date.toLocaleTimeString('en-US', timeOptions)}`
+  };
+}
 
 let allEntries = [];
 
