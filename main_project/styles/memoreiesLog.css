@@ -553,7 +553,6 @@ button[type="submit"]:disabled {
   cursor: not-allowed;
 }
 
-/* Entries Section */
 #entries-section {
   margin-top: 50px;
   padding-top: 30px;
