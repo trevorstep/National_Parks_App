@@ -1,10 +1,7 @@
 import { initAuth, saveVisitedPark, removeVisitedPark, getVisitedParks } from './auth.js';
 
-// A Set to store the park codes of visited parks.
 let visitedParksSet = new Set();
-// A flag to check if it's the initial load of the page.
 let isInitialLoad = true;
-// A reference to the ArcGIS GraphicsLayer.
 let graphicsLayerRef = null;
 
 /**

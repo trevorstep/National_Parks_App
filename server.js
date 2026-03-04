@@ -18,7 +18,6 @@ app.get("/api/config", (request, response) => {
     });
 });
 
-// Serve local parks data (fast!)
 app.get("/national-parks", (request, response) => {
     try {
         const parksData = fs.readFileSync(
