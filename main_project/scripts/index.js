@@ -1,9 +1,15 @@
 import { initAuth, saveVisitedPark, removeVisitedPark, getVisitedParks } from './auth.js';
 
+// A Set to store the park codes of visited parks.
 let visitedParksSet = new Set();
+// A flag to check if it's the initial load of the page.
 let isInitialLoad = true;
+// A reference to the ArcGIS GraphicsLayer.
 let graphicsLayerRef = null;
 
+/**
+ * Updates the progress bar and text to reflect the number of visited parks.
+ */
 function updateProgressBar() {
   const bar = document.getElementById('progress-bar');
   const text = document.getElementById('progress-text');
@@ -17,6 +23,10 @@ function updateProgressBar() {
   text.innerHTML = `${visitedCount}/${totalParks} Parks (${percentage}%)`;
 }
 
+/**
+ * Event listener for when a user logs in.
+ * It fetches the visited parks, updates the progress bar, and reloads the map.
+ */
 window.addEventListener('userLoggedIn', async () => {
   visitedParksSet = await getVisitedParks();
   updateProgressBar();
@@ -27,6 +37,10 @@ window.addEventListener('userLoggedIn', async () => {
   isInitialLoad = false;
 });
 
+/**
+ * Event listener for when a user logs out.
+ * It clears the visited parks, updates the progress bar, and reloads the map.
+ */
 window.addEventListener('userLoggedOut', () => {
   visitedParksSet = new Set();
   updateProgressBar();
@@ -35,18 +49,30 @@ window.addEventListener('userLoggedOut', () => {
   }
 });
 
+// Initialize the authentication module.
 initAuth();
 
-fetch('/api/config')
-  .then(response => response.json())
-  .then(config => {
-    require(["esri/config"], function (esriConfig) {
-      esriConfig.apiKey = config.arcgisApiKey;
-      initializeMap();
-    });
-  })
-  .catch(error => console.error('Error fetching API key:', error));
+/**
+ * Fetches the ArcGIS API key from the server and then initializes the map.
+ */
+function fetchConfigAndInitMap() {
+    fetch('/api/config')
+      .then(response => response.json())
+      .then(config => {
+        require(["esri/config"], function (esriConfig) {
+          esriConfig.apiKey = config.arcgisApiKey;
+          initializeMap();
+        });
+      })
+      .catch(error => console.error('Error fetching API key:', error));
+}
 
+fetchConfigAndInitMap();
+
+/**
+ * Fetches national parks data from the '/national-parks' endpoint.
+ * @returns {Promise<Array>} A promise that resolves to an array of park objects.
+ */
 async function fetchParks() {
   try {
     const response = await fetch('/national-parks');
@@ -58,29 +84,41 @@ async function fetchParks() {
   }
 }
 
+// Variables for the image modal gallery.
 const gallery = document.querySelector('.gallery');
 const modal = document.querySelector('dialog');
 let modalImage, closeButton;
 
-if (modal) {
-  modalImage = modal.querySelector('img');
-  closeButton = modal.querySelector('.close-viewer');
+/**
+ * Initializes the image modal functionality.
+ */
+function initializeModal() {
+    if (modal) {
+        modalImage = modal.querySelector('img');
+        closeButton = modal.querySelector('.close-viewer');
 
-  if (gallery) {
-    gallery.addEventListener('click', openModal);
-  }
+        if (gallery) {
+            gallery.addEventListener('click', openModal);
+        }
 
-  closeButton.addEventListener('click', () => {
-    modal.close();
-  });
+        closeButton.addEventListener('click', () => {
+            modal.close();
+        });
 
-  modal.addEventListener('click', (event) => {
-    if (event.target === modal) {
-        modal.close();
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                modal.close();
+            }
+        });
     }
-  });
 }
 
+initializeModal();
+
+/**
+ * Opens the modal with the clicked image.
+ * @param {Event} e The click event.
+ */
 function openModal(e) {
   if (e.target.tagName === 'IMG') {
     const img = e.target;
@@ -95,13 +133,25 @@ function openModal(e) {
   }
 }
 
+// Variables for the menu button.
 const btn = document.querySelector('.menu-btn');
 const menu = document.querySelector('nav');
 
-if (btn) {
-  btn.addEventListener('click', togglemenu);
+/**
+ * Adds event listener to the menu button.
+ */
+function initializeMenuButton() {
+    if (btn) {
+        btn.addEventListener('click', togglemenu);
+    }
 }
 
+initializeMenuButton();
+
+
+/**
+ * Toggles the visibility of the navigation menu and changes the menu button's appearance.
+ */
 function togglemenu() {
     if (menu) {
       menu.classList.toggle('hide');
@@ -111,6 +161,11 @@ function togglemenu() {
     }
 }
 
+/**
+ * Creates the HTML content for a map popup.
+ * @param {object} attributes The attributes of the park graphic.
+ * @returns {HTMLElement} The container element for the popup.
+ */
 function createPopupContent(attributes) {
   const container = document.createElement('div');
   container.className = 'popup-content';
@@ -195,6 +250,11 @@ function createPopupContent(attributes) {
   return container;
 }
 
+/**
+ * Updates the color of a map marker based on its visited status.
+ * @param {string} parkCode The park code of the marker to update.
+ * @param {boolean} visited Whether the park has been visited.
+ */
 function updateMarkerColor(parkCode, visited) {
   if (!graphicsLayerRef) return;
   
@@ -210,14 +270,101 @@ function updateMarkerColor(parkCode, visited) {
   }
 }
 
+/**
+ * Creates and adds park markers to the graphics layer.
+ * @param {Array} parks - Array of park data.
+ * @param {esri/Graphic} Graphic - The ArcGIS Graphic class.
+ * @param {esri/layers/GraphicsLayer} graphicsLayer - The layer to add graphics to.
+ * @param {Set} visitedParksSet - A set of visited park codes.
+ */
+function createParkMarkers(parks, Graphic, graphicsLayer, visitedParksSet) {
+    if (!parks || !Array.isArray(parks)) return;
+
+    parks.forEach((park) => {
+        if (!park.latLong) return;
+
+        const parts = park.latLong.split(",");
+        let lat = null, lng = null;
+
+        parts.forEach(part => {
+            const trimmed = part.trim();
+            if (trimmed.startsWith("lat:")) lat = parseFloat(trimmed.split("lat:")[1]);
+            else if (trimmed.startsWith("long:")) lng = parseFloat(trimmed.split("long:")[1]);
+        });
+
+        if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
+            const visited = visitedParksSet.has(park.parkCode);
+
+            const marker = new Graphic({
+                geometry: { type: 'point', longitude: lng, latitude: lat },
+                symbol: {
+                    type: 'simple-marker',
+                    color: visited ? [0, 0, 255] : [255, 0, 0],
+                    size: '14px',
+                    outline: { color: [255, 255, 255], width: 2 }
+                },
+                attributes: {
+                    parkCode: park.parkCode,
+                    fullName: park.fullName,
+                    description: park.description || "No description available",
+                    visited: visited,
+                    images: park.images || []
+                },
+                popupTemplate: {
+                    title: "{fullName}",
+                    content: (feature) => createPopupContent(feature.graphic.attributes)
+                }
+            });
+
+            graphicsLayer.add(marker);
+        }
+    });
+}
+
+/**
+ * Handles the change event for the 'visited' checkbox in the popup.
+ * @param {Event} event The change event.
+ */
+async function handleVisitedCheckboxChange(event) {
+    if (event.target.matches('.visited-checkbox')) {
+        const checkbox = event.target;
+        const parkCode = checkbox.dataset.parkcode;
+        const isChecked = checkbox.checked;
+
+        checkbox.disabled = true;
+
+        try {
+            if (isChecked) {
+                await saveVisitedPark(parkCode);
+                visitedParksSet.add(parkCode);
+            } else {
+                await removeVisitedPark(parkCode);
+                visitedParksSet.delete(parkCode);
+            }
+
+            updateProgressBar();
+            updateMarkerColor(parkCode, isChecked);
+            console.log(`Park ${parkCode} ${isChecked ? 'saved' : 'removed'}`);
+        } catch (error) {
+            console.error('Error updating park:', error);
+            checkbox.checked = !isChecked;
+            alert('Failed to update. Please try again.');
+        } finally {
+            checkbox.disabled = false;
+        }
+    }
+}
+
+/**
+ * Initializes the ArcGIS map and its components.
+ */
 function initializeMap() {
   require([
     'esri/Map',
     'esri/views/MapView',
     'esri/Graphic',
-    'esri/layers/GraphicsLayer',
-    'esri/core/reactiveUtils'
-  ], function (Map, MapView, Graphic, GraphicsLayer, reactiveUtils) {
+    'esri/layers/GraphicsLayer'
+  ], function (Map, MapView, Graphic, GraphicsLayer) {
 
     const map = new Map({ basemap: 'topo-vector' });
 
@@ -240,114 +387,17 @@ function initializeMap() {
 
     view.when(async () => {
       const parks = await fetchParks();
-      if (!parks || !Array.isArray(parks)) return;
-
-      parks.forEach((park) => {
-        if (!park.latLong) return;
-
-        const parts = park.latLong.split(",");
-        let lat = null, lng = null;
-
-        parts.forEach(part => {
-          const trimmed = part.trim();
-          if (trimmed.startsWith("lat:")) lat = parseFloat(trimmed.split("lat:")[1]);
-          else if (trimmed.startsWith("long:")) lng = parseFloat(trimmed.split("long:")[1]);
-        });
-
-        if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
-          const visited = visitedParksSet.has(park.parkCode);
-
-          const marker = new Graphic({
-            geometry: { type: 'point', longitude: lng, latitude: lat },
-            symbol: {
-              type: 'simple-marker',
-              color: visited ? [0, 0, 255] : [255, 0, 0],
-              size: '14px',
-              outline: { color: [255, 255, 255], width: 2 }
-            },
-            attributes: {
-              parkCode: park.parkCode,
-              fullName: park.fullName,
-              description: park.description || "No description available",
-              visited: visited,
-              images: park.images || []
-            },
-            popupTemplate: {
-              title: "{fullName}",
-              content: (feature) => createPopupContent(feature.graphic.attributes)
-            }
-          });
-
-          graphicsLayerRef.add(marker);
-        }
-      });
-
-      view.container.addEventListener('change', async (event) => {
-      if (event.target.matches('.visited-checkbox')) {
-      const checkbox = event.target;
-      const parkCode = checkbox.dataset.parkcode;
-      const isChecked = checkbox.checked;
-
-      checkbox.disabled = true;
-
-    try {
-      if (isChecked) {
-        await saveVisitedPark(parkCode);
-        visitedParksSet.add(parkCode);
-      } else {
-        await removeVisitedPark(parkCode);
-        visitedParksSet.delete(parkCode);
-      }
-
-      updateProgressBar();
-      updateMarkerColor(parkCode, isChecked);
-      console.log(`Park ${parkCode} ${isChecked ? 'saved' : 'removed'}`);
-    } catch (error) {
-      console.error('Error updating park:', error);
-      checkbox.checked = !isChecked;
-      alert('Failed to update. Please try again.');
-    } finally {
-      checkbox.disabled = false;
-    }
-  }
-});
-
-      
+      createParkMarkers(parks, Graphic, graphicsLayerRef, visitedParksSet);
+      view.container.addEventListener('change', handleVisitedCheckboxChange);
     });
   });
 }
 
-
-fetch("./data/nationalParks.json")
-  .then(response => response.json())
-  .then(data => {
-    const parks_container = document.querySelector('#parks-container');
-    const form = document.querySelector('form');
-
-    const randomPark = data[Math.floor(Math.random() * data.length)];
-    parks_container.innerHTML = parkTemplate(randomPark);
-
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const searchTerm = document.querySelector('#search').value.toLowerCase();
-
-      const filtered = data.filter(park =>
-        park.fullName.toLowerCase().includes(searchTerm) ||
-        park.parkCode.toLowerCase().includes(searchTerm) ||
-        park.description.toLowerCase().includes(searchTerm) ||
-        park.activities.some(a => a.toLowerCase().includes(searchTerm)) ||
-        park.topics.some(t => t.toLowerCase().includes(searchTerm)) ||
-        park.states.toLowerCase().includes(searchTerm)
-      );
-
-      const sorted = filtered.sort((a, b) => a.fullName.localeCompare(b.fullName));
-      
-      parks_container.innerHTML = '';
-      sorted.forEach(park => parks_container.innerHTML += parkTemplate(park));
-    });
-  })
-  .catch(err => console.error(err));
-
+/**
+ * Returns an HTML string for a park's display template.
+ * @param {object} data The park data.
+ * @returns {string} The HTML template string.
+ */
 function parkTemplate(data) {
   return `
     <div class="park-container">
@@ -368,3 +418,60 @@ function parkTemplate(data) {
     </div>
   `;
 }
+
+/**
+ * Filters and sorts the parks based on the search term.
+ * @param {Array} data The array of park data.
+ * @param {string} searchTerm The search term.
+ * @returns {Array} The filtered and sorted array of parks.
+ */
+function filterAndSortParks(data, searchTerm) {
+    const filtered = data.filter(park =>
+        park.fullName.toLowerCase().includes(searchTerm) ||
+        park.parkCode.toLowerCase().includes(searchTerm) ||
+        park.description.toLowerCase().includes(searchTerm) ||
+        park.activities.some(a => a.toLowerCase().includes(searchTerm)) ||
+        park.topics.some(t => t.toLowerCase().includes(searchTerm)) ||
+        park.states.toLowerCase().includes(searchTerm)
+    );
+
+    return filtered.sort((a, b) => a.fullName.localeCompare(b.fullName));
+}
+
+/**
+ * Displays the parks in the container.
+ * @param {Array} parks The array of parks to display.
+ * @param {HTMLElement} container The container to display the parks in.
+ */
+function displayParks(parks, container) {
+    container.innerHTML = '';
+    parks.forEach(park => container.innerHTML += parkTemplate(park));
+}
+
+/**
+ * Initializes the park search functionality.
+ */
+function initializeParkSearch() {
+    fetch("./data/nationalParks.json")
+      .then(response => response.json())
+      .then(data => {
+        const parks_container = document.querySelector('#parks-container');
+        if (!parks_container) return;
+        const form = document.querySelector('form');
+
+        const randomPark = data[Math.floor(Math.random() * data.length)];
+        parks_container.innerHTML = parkTemplate(randomPark);
+
+        if (form) {
+            form.addEventListener('submit', (e) => {
+              e.preventDefault();
+              const searchTerm = document.querySelector('#search').value.toLowerCase();
+              const sorted = filterAndSortParks(data, searchTerm);
+              displayParks(sorted, parks_container);
+            });
+        }
+      })
+      .catch(err => console.error(err));
+}
+
+initializeParkSearch();
