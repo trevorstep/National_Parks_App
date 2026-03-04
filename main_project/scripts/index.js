@@ -25,27 +25,31 @@ function updateProgressBar() {
 
 /**
  * Event listener for when a user logs in.
- * It fetches the visited parks, updates the progress bar, and reloads the map.
+ * It fetches the visited parks, updates the progress bar, and initializes the map or updates markers.
  */
 window.addEventListener('userLoggedIn', async () => {
   visitedParksSet = await getVisitedParks();
   updateProgressBar();
 
-  if (window.mapInitialized && !isInitialLoad) {
-    location.reload();
+  if (!window.mapInitialized) {
+    fetchConfigAndInitMap();
+  } else {
+    updateAllMarkerColors();
   }
   isInitialLoad = false;
 });
 
 /**
  * Event listener for when a user logs out.
- * It clears the visited parks, updates the progress bar, and reloads the map.
+ * It clears the visited parks, updates the progress bar, and updates the map markers.
  */
 window.addEventListener('userLoggedOut', () => {
   visitedParksSet = new Set();
   updateProgressBar();
-  if (window.mapInitialized) {
-    location.reload();
+  if (!window.mapInitialized) {
+    fetchConfigAndInitMap();
+  } else {
+    updateAllMarkerColors();
   }
 });
 
@@ -66,8 +70,6 @@ function fetchConfigAndInitMap() {
       })
       .catch(error => console.error('Error fetching API key:', error));
 }
-
-fetchConfigAndInitMap();
 
 /**
  * Fetches national parks data from the '/national-parks' endpoint.
@@ -268,6 +270,19 @@ function updateMarkerColor(parkCode, visited) {
       outline: { color: [255, 255, 255], width: 2 }
     };
   }
+}
+
+/**
+ * Updates the color of all map markers based on the visitedParksSet.
+ */
+function updateAllMarkerColors() {
+    if (!graphicsLayerRef) return;
+    graphicsLayerRef.graphics.forEach(graphic => {
+        const visited = visitedParksSet.has(graphic.attributes.parkCode);
+        if (graphic.attributes.visited !== visited) {
+             updateMarkerColor(graphic.attributes.parkCode, visited);
+        }
+    });
 }
 
 /**
