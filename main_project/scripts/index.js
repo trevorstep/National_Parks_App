@@ -60,14 +60,16 @@ async function fetchParks() {
 
 const gallery = document.querySelector('.gallery');
 const modal = document.querySelector('dialog');
-const modalImage = modal.querySelector('img');
-const closeButton = modal.querySelector('.close-viewer');
-
-if (gallery) {
-  gallery.addEventListener('click', openModal);
-}
+let modalImage, closeButton;
 
 if (modal) {
+  modalImage = modal.querySelector('img');
+  closeButton = modal.querySelector('.close-viewer');
+
+  if (gallery) {
+    gallery.addEventListener('click', openModal);
+  }
+
   closeButton.addEventListener('click', () => {
     modal.close();
   });
