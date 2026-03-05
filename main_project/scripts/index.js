@@ -1,4 +1,9 @@
 import { initAuth, saveVisitedPark, removeVisitedPark, getVisitedParks } from './auth.js';
+import esriConfig from "https://js.arcgis.com/4.32/@arcgis/core/config.js";
+import Map from "https://js.arcgis.com/4.32/@arcgis/core/Map.js";
+import MapView from "https://js.arcgis.com/4.32/@arcgis/core/views/MapView.js";
+import Graphic from "https://js.arcgis.com/4.32/@arcgis/core/Graphic.js";
+import GraphicsLayer from "https://js.arcgis.com/4.32/@arcgis/core/layers/GraphicsLayer.js";
 
 let visitedParksSet = new Set();
 let isInitialLoad = true;
@@ -66,10 +71,8 @@ function fetchConfigAndInitMap() {
     fetch('/api/config')
       .then(response => response.json())
       .then(config => {
-        require(["esri/config"], function (esriConfig) {
-          esriConfig.apiKey = config.arcgisApiKey;
-          initializeMap();
-        });
+        esriConfig.apiKey = config.arcgisApiKey;
+        initializeMap();
       })
       .catch(error => {
         console.error('Error fetching API key:', error);
@@ -89,13 +92,6 @@ async function fetchParks() {
 }
 
 function initializeMap() {
-  require([
-    'esri/Map',
-    'esri/views/MapView',
-    'esri/Graphic',
-    'esri/layers/GraphicsLayer'
-  ], function (Map, MapView, Graphic, GraphicsLayer) {
-
     const map = new Map({ basemap: 'topo-vector' });
 
     const view = new MapView({
@@ -123,7 +119,6 @@ function initializeMap() {
       // This is the correct place to hide the loader
       hideLoader();
     });
-  });
 }
 
 // --- Popup Content ---
