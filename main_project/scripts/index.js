@@ -1,14 +1,13 @@
 import { initAuth, saveVisitedPark, removeVisitedPark, getVisitedParks } from './auth.js';
 import esriConfig from "https://js.arcgis.com/4.32/@arcgis/core/config.js";
 import Map from "https://js.arcgis.com/4.32/@arcgis/core/Map.js";
-import SceneView from "https://js.arcgis.com/4.32/@arcgis/core/views/SceneView.js";
+import MapView from "https://js.arcgis.com/4.32/@arcgis/core/views/MapView.js";
 import Graphic from "https://js.arcgis.com/4.32/@arcgis/core/Graphic.js";
 import GraphicsLayer from "https://js.arcgis.com/4.32/@arcgis/core/layers/GraphicsLayer.js";
 
 let visitedParksSet = new Set();
 let isInitialLoad = true;
 let viewRef = null;
-let graphicsLayerRef = null;
 
 // --- Main Application Startup ---
 async function main() {
@@ -93,41 +92,19 @@ async function fetchParks() {
 }
 
 function initializeMap() {
-    const graphicsLayer = new GraphicsLayer({
-      elevationInfo: { mode: "on-the-ground" }
-    });
-    graphicsLayerRef = graphicsLayer;
+    const map = new Map({ basemap: 'terrain' });
 
-    const map = new Map({
-        basemap: 'terrain',
-        ground: "world-elevation"
-    });
-    map.add(graphicsLayer);
-
-    const view = new SceneView({
-        container: 'viewDiv',
-        map: map,
-        camera: {
-            position: {
-                x: -98.5795,
-                y: 25.8283, 
-                z: 5000000 
-            },
-            tilt: 0
-        },
-        constraints: {
-            altitude: {
-                min: 800000
-            },
-            tilt: {
-                max: 60
-            }
-        },
-        popup: {
-            dockEnabled: true,
-            dockOptions: { buttonEnabled: false, breakpoint: false, position: "top-right" },
-            alignment: "auto"
-        }
+    const view = new MapView({
+      container: 'viewDiv',
+      map: map,
+      center: [-98.5795, 39.8283],
+      zoom: 4,
+      constraints: { minZoom: 3, maxZoom: 16, rotationEnabled: false },
+      popup: {
+        dockEnabled: true,
+        dockOptions: { buttonEnabled: false, breakpoint: false, position: "top-right" },
+        alignment: "auto"
+      }
     });
     viewRef = view;
 
@@ -136,11 +113,11 @@ function initializeMap() {
     window.mapInitialized = true;
 
     view.when(async () => {
-        const parks = await fetchParks();
-        createParkMarkers(parks, graphicsLayer, visitedParksSet);
-        view.container.addEventListener('change', handleVisitedCheckboxChange);
-
-        hideLoader();
+      const parks = await fetchParks();
+      createParkMarkers(parks, Graphic, view, visitedParksSet);
+      view.container.addEventListener('change', handleVisitedCheckboxChange);
+      
+      hideLoader();
     });
 }
 
@@ -233,7 +210,7 @@ async function fetchParkAlerts(parkCode, container) {
 
 
 // --- Park Markers ---
-function createParkMarkers(parks, graphicsLayer, visitedParksSet) {
+function createParkMarkers(parks, Graphic, graphicsLayer, visitedParksSet) {
     if (!parks || !Array.isArray(parks)) return;
     parks.forEach((park) => {
         if (!park.latLong) return;
@@ -387,7 +364,7 @@ function filterAndSortParks(data, searchTerm) {
         park.description.toLowerCase().includes(searchTerm) ||
         park.activities.some(a => a.toLowerCase().includes(searchTerm)) ||
         park.topics.some(t => t.toLowerCase().includes(searchTerm)) ||
-        park.states.toLowerCase().includes(searchTerm)
+        park.states.toLowerCase()..includes(searchTerm)
     );
     return filtered.sort((a, b) => a.fullName.localeCompare(b.fullName));
 }
