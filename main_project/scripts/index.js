@@ -92,13 +92,13 @@ async function fetchParks() {
 }
 
 function initializeMap() {
-    const map = new Map({ basemap: 'gray-vector' });
+    const map = new Map({ basemap: 'terrain' });
 
     const view = new MapView({
       container: 'viewDiv',
       map: map,
       center: [-98.5795, 39.8283],
-      zoom: 4,
+      zoom: 5,
       constraints: { minZoom: 3, maxZoom: 16, rotationEnabled: false },
       popup: {
         dockEnabled: true,
@@ -167,13 +167,12 @@ async function createPopupContent(attributes) {
   alertsContainer.className = 'popup-alerts';
   container.appendChild(alertsContainer);
   // Intentionally call this without await to let it load in the background
-  fetchParkAlerts(attributes.parkCode, alertsContainer); 
+  await fetchParkAlerts(attributes.parkCode, alertsContainer); 
 
   return container;
 }
 
 async function fetchParkAlerts(parkCode, container) {
-  container.innerHTML = '<div class="loader-small"></div>';
   try {
     const response = await fetch(`/park-alerts/${parkCode}`);
     const alerts = await response.json();
@@ -229,7 +228,12 @@ function createParkMarkers(parks, Graphic, graphicsLayer, visitedParksSet) {
                 attributes: { ...park, visited: visited },
                 popupTemplate: {
                     title: "{fullName}",
-                    content: createPopupContent
+                    content: async (feature) => {
+                        showLoader();
+                        const content = await createPopupContent(feature.graphic.attributes);
+                        hideLoader();
+                        return content;
+                    }
                 }
             });
             graphicsLayer.add(marker);
