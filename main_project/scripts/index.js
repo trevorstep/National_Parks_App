@@ -195,8 +195,9 @@ function createParkMarkers(parks, Graphic, graphicsLayer, visitedParksSet) {
                 attributes: { ...park, visited: visited },
                 popupTemplate: {
                     title: "{fullName}",
-                    content: (feature) => {
+                    content: async (feature) => {
                         showLoader();
+                        await new Promise(resolve => setTimeout(resolve, 10)); 
                         const content = createPopupContent(feature.graphic.attributes);
                         hideLoader();
                         return content;
