@@ -1,12 +1,13 @@
 import { initAuth, saveVisitedPark, removeVisitedPark, getVisitedParks } from './auth.js';
 import esriConfig from "https://js.arcgis.com/4.32/@arcgis/core/config.js";
 import Map from "https://js.arcgis.com/4.32/@arcgis/core/Map.js";
-import MapView from "https://js.arcgis.com/4.32/@arcgis/core/views/MapView.js";
+import SceneView from "https://js.arcgis.com/4.32/@arcgis/core/views/SceneView.js";
 import Graphic from "https://js.arcgis.com/4.32/@arcgis/core/Graphic.js";
 import GraphicsLayer from "https://js.arcgis.com/4.32/@arcgis/core/layers/GraphicsLayer.js";
 
 let visitedParksSet = new Set();
 let isInitialLoad = true;
+let viewRef = null;
 let graphicsLayerRef = null;
 
 // --- Main Application Startup ---
@@ -92,36 +93,60 @@ async function fetchParks() {
 }
 
 function initializeMap() {
-    const map = new Map({ basemap: 'terrain' });
-
-    const view = new MapView({
-      container: 'viewDiv',
-      map: map,
-      center: [-98.5795, 39.8283],
-      zoom: 5,
-      constraints: { minZoom: 3, maxZoom: 16, rotationEnabled: false },
-      popup: {
-        dockEnabled: true,
-        dockOptions: { buttonEnabled: false, breakpoint: false, position: "top-right" },
-        alignment: "auto"
-      }
+    const graphicsLayer = new GraphicsLayer({
+      elevationInfo: { mode: "on-the-ground" }
     });
+    graphicsLayerRef = graphicsLayer;
+
+    const map = new Map({
+        basemap: 'terrain',
+        ground: "world-elevation"
+    });
+    map.add(graphicsLayer);
+
+    const view = new SceneView({
+        container: 'viewDiv',
+        map: map,
+        camera: {
+            position: {
+                x: -98.5795,
+                y: 25.8283, 
+                z: 5000000 
+            },
+            tilt: 0
+        },
+        constraints: {
+            altitude: {
+                min: 800000
+            },
+            tilt: {
+                max: 60
+            }
+        },
+        popup: {
+            dockEnabled: true,
+            dockOptions: { buttonEnabled: false, breakpoint: false, position: "top-right" },
+            alignment: "auto"
+        }
+    });
+    viewRef = view;
+
+    view.popup.actions = [];
 
     window.mapInitialized = true;
-    graphicsLayerRef = new GraphicsLayer();
-    map.add(graphicsLayerRef);
 
     view.when(async () => {
-      const parks = await fetchParks();
-      createParkMarkers(parks, Graphic, graphicsLayerRef, visitedParksSet);
-      view.container.addEventListener('change', handleVisitedCheckboxChange);
-      
-      hideLoader();
+        const parks = await fetchParks();
+        createParkMarkers(parks, graphicsLayer, visitedParksSet);
+        view.container.addEventListener('change', handleVisitedCheckboxChange);
+
+        hideLoader();
     });
 }
 
 // --- Popup Content ---
-async function createPopupContent(attributes) {
+function createPopupContent(feature) {
+  const attributes = feature.graphic.attributes;
   const container = document.createElement('div');
   container.className = 'popup-content';
 
@@ -167,7 +192,7 @@ async function createPopupContent(attributes) {
   alertsContainer.className = 'popup-alerts';
   container.appendChild(alertsContainer);
   // Intentionally call this without await to let it load in the background
-  await fetchParkAlerts(attributes.parkCode, alertsContainer); 
+  fetchParkAlerts(attributes.parkCode, alertsContainer); 
 
   return container;
 }
@@ -182,7 +207,11 @@ async function fetchParkAlerts(parkCode, container) {
     }
 
     if (alerts && alerts.length > 0) {
-      container.innerHTML = '<h3>Park Alerts</h3>';
+      const details = document.createElement('details');
+      const summary = document.createElement('summary');
+      summary.textContent = 'Park Alerts';
+      details.appendChild(summary);
+
       alerts.slice(0, 3).forEach(alert => {
         const alertDiv = document.createElement('div');
         alertDiv.className = 'alert-item';
@@ -190,8 +219,9 @@ async function fetchParkAlerts(parkCode, container) {
           <h4>${alert.title}</h4>
           <p>${alert.description}</p>
         `;
-        container.appendChild(alertDiv);
+        details.appendChild(alertDiv);
       });
+      container.appendChild(details);
     } else {
       container.innerHTML = '<p>No current alerts for this park.</p>';
     }
@@ -203,7 +233,7 @@ async function fetchParkAlerts(parkCode, container) {
 
 
 // --- Park Markers ---
-function createParkMarkers(parks, Graphic, graphicsLayer, visitedParksSet) {
+function createParkMarkers(parks, graphicsLayer, visitedParksSet) {
     if (!parks || !Array.isArray(parks)) return;
     parks.forEach((park) => {
         if (!park.latLong) return;
@@ -228,12 +258,7 @@ function createParkMarkers(parks, Graphic, graphicsLayer, visitedParksSet) {
                 attributes: { ...park, visited: visited },
                 popupTemplate: {
                     title: "{fullName}",
-                    content: async (feature) => {
-                        showLoader();
-                        const content = await createPopupContent(feature.graphic.attributes);
-                        hideLoader();
-                        return content;
-                    }
+                    content: createPopupContent
                 }
             });
             graphicsLayer.add(marker);

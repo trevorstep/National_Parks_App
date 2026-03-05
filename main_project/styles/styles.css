@@ -5,805 +5,399 @@
 }
 
 .loader {
-
   position: absolute;
-
   top: 20px;
-
   left: 20px;
-
   z-index: 2;
-
   width: calc(6*30px);
-
   height: 50px;
-
-  display: none; 
-
+  display: none;
   color: #9d7958;
-
   filter: drop-shadow(30px 25px 0 currentColor) drop-shadow(60px 0 0 currentColor) drop-shadow(120px 0 0 currentColor);
-
   clip-path: inset(0 100% 0 0);
-
   animation: l13 0.5s infinite steps(7);
-
-  background-color: transparent; 
-
+  background-color: transparent;
 }
-
-
 
 .loader:before {
-
   content: "";
-
   width: 30px;
-
   height: 25px;
-
   background:
-
     radial-gradient(farthest-side at right, currentColor 92%, #0000) left/20px 100% no-repeat,
-
     radial-gradient(farthest-side, currentColor 92%, #0000) right/17px 9px repeat-y;
-
 }
-
-
 
 @keyframes l13 {
-
   100% {
-
     clip-path: inset(0 -30px 0 0)
-
   }
-
 }
-
-
 
 body {
-
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-
   background-color: #f0f0f0;
-
 }
-
-
 
 header {
-
   background: linear-gradient(135deg, #2c5f2d 0%, #97bc62 100%);
-
   color: white;
-
   padding: 30px 20px;
-
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-
   position: relative;
-
 }
-
-
 
 .header-content {
-
   text-align: center;
-
   max-width: 1600px;
-
   margin: 0 auto;
-
 }
-
-
 
 header h1 {
-
   font-size: 2.5rem;
-
   margin-bottom: 10px;
-
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
-
 }
-
-
 
 header p {
-
   font-size: 1.1rem;
-
   opacity: 0.95;
-
 }
-
-
 
 #auth-container {
-
   position: absolute;
-
   top: 50%;
-
   right: 20px;
-
   transform: translateY(-50%);
-
 }
-
-
 
 #login-btn,
-
 #logout-btn {
-
   background: white;
-
   color: #2c5f2d;
-
   border: none;
-
   padding: 5px 10px;
-
   border-radius: 5px;
-
   font-size: 1rem;
-
   cursor: pointer;
-
   font-weight: 600;
-
   transition: transform 0.2s, box-shadow 0.2s;
-
 }
-
-
 
 #login-btn:hover,
-
 #logout-btn:hover {
-
   transform: translateY(-2px);
-
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-
 }
-
-
 
 #user-info {
-
   display: flex;
-
   align-items: center;
-
   gap: 15px;
-
 }
-
-
 
 #user-name {
-
   color: white;
-
   font-weight: 500;
-
   font-size: 1rem;
-
 }
-
-
 
 main {
-
   padding: 20px;
-
   max-width: 1600px;
-
   margin: 0 auto;
-
   display: flex;
-
   flex-direction: column;
-
   gap: 20px;
-
 }
-
-
 
 #viewDiv {
-
   width: 90%;
-
   height: 70vh;
-
   min-height: 500px;
-
   border-radius: 10px;
-
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-
   overflow: hidden;
-
   position: relative;
-
   margin: 0 auto;
-
   z-index: 1;
-
 }
-
-
 
 .popup-content {
-
   padding: 5px;
-
 }
-
-
 
 .popup-images {
-
   display: flex;
-
   gap: 8px;
-
   margin-bottom: 15px;
-
   flex-wrap: wrap;
-
 }
-
-
 
 .popup-images img {
-
   width: 100px;
-
   height: 100px;
-
   object-fit: cover;
-
   border-radius: 8px;
-
   border: 2px solid #ddd;
-
   transition: transform 0.2s;
-
 }
-
-
 
 .park-search-img {
-
   width: 100%;
-
   height: auto;
-
 }
-
-
 
 .popup-images img:hover {
-
   transform: scale(1.05);
-
   border-color: #2c5f2d;
-
 }
-
-
 
 .popup-images-hidden {
-
   display: flex;
-
   gap: 8px;
-
   margin-bottom: 15px;
-
   flex-wrap: wrap;
-
 }
-
-
 
 .popup-images-hidden img {
-
   width: 100px;
-
   height: 100px;
-
   object-fit: cover;
-
   border-radius: 8px;
-
   border: 2px solid #ddd;
-
   transition: transform 0.2s;
-
 }
-
-
 
 .popup-images-hidden img:hover {
-
   transform: scale(1.05);
-
   border-color: #2c5f2d;
-
 }
-
-
 
 .see-more-btn {
-
   background: #2c5f2d;
-
   color: white;
-
   border: none;
-
   padding: 8px 16px;
-
   border-radius: 5px;
-
   font-size: 0.9rem;
-
   cursor: pointer;
-
   margin-bottom: 15px;
-
   font-weight: 500;
-
   transition: background 0.2s;
-
 }
-
-
 
 .see-more-btn:hover {
-
   background: #1a3a1a;
-
 }
-
-
 
 .popup-description {
-
   margin-bottom: 15px;
-
   line-height: 1.6;
-
   color: #333;
-
   font-size: 0.95rem;
-
 }
-
-
 
 .popup-checkbox-container {
-
   padding: 12px;
-
   background: #f5f5f5;
-
   border-radius: 8px;
-
   border: 1px solid #e0e0e0;
-
 }
-
-
 
 .checkbox-label {
-
   display: flex;
-
   align-items: center;
-
   cursor: pointer;
-
   font-weight: 500;
-
   color: #2c5f2d;
-
   user-select: none;
-
 }
-
-
 
 .checkbox-label:hover {
-
   color: #1a3a1a;
-
 }
-
-
 
 .visited-checkbox {
-
   margin-right: 10px;
-
   width: 20px;
-
   height: 20px;
-
   cursor: pointer;
-
   accent-color: #2c5f2d;
-
 }
-
-
 
 .visited-checkbox:checked {
-
   accent-color: #1e88e5;
-
 }
-
-
 
 .checkbox-label span {
-
   font-size: 1rem;
-
 }
-
-
 
 /* Stuff I added for wdd 131 */
-
-
-
 #searching {
-
   width: 20px;
-
   height: auto;
-
   border-left: 2px solid black;
-
   padding: 10px;
-
   margin: 4px 0;
-
 }
-
-
 
 #search {
-
   flex: 1;
-
   border: none;
-
   padding: 10px;
-
   outline: none;
-
 }
-
-
 
 footer {
-
   background: linear-gradient(135deg, #97bc62 0%, #2c5f2d 100%);
-
   color: white;
-
   padding: 30px 20px;
-
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-
   position: relative;
-
   text-align: center;
-
 }
-
-
-
-
 
 footer p {
-
   text-align: center;
-
   font-size: 1rem;
-
   opacity: 0.9;
-
 }
-
-
 
 a {
-
   font-size: 1rem;
-
   color: white;
-
 }
-
-
 
 park-img park-search-img {
-
   width: 100%;
-
   height: auto;
-
 }
-
-
 
 form {
-
   border-radius: 5px;
-
   background-color: #f2f2f2;
-
   padding: 20px;
-
 }
-
-
 
 label {
-
   display: block;
-
-
-
 }
-
-
 
 hr {
-
   margin: 5px;
-
 }
-
-
-
-
 
 @media (max-width: 900px) {
-
   header {
-
     padding: 20px 10px;
-
   }
-
-
 
   .header-content {
-
     padding-right: 0;
-
   }
-
-
 
   header h1 {
-
     font-size: 1.8rem;
-
   }
-
-
 
   header p {
-
     font-size: 0.95rem;
-
   }
-
-
 
   #auth-container {
-
     position: static;
-
     transform: none;
-
     margin-top: 15px;
-
     text-align: center;
-
   }
-
-
 
   #user-info {
-
     flex-direction: column;
-
     gap: 10px;
-
   }
-
-
 
   .loader {
-
-    position: fixed;
-
+    position: absolute;
     top: 50%;
-
     left: 50%;
-
     transform: translate(-50%, -50%);
-
     margin: 0;
-
   }
-
-
 
   .popup-images img {
-
     width: 80px;
-
     height: 80px;
-
   }
-
 }
-
-
-
-
 
 .progress {
-
   width: 100%;
-
   height: 30px;
-
   background-color: #e0e0e0;
-
   border-radius: 15px;
-
   overflow: hidden;
-
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-
   position: relative;
-
 }
-
-
 
 .progress-done {
-
   height: 100%;
-
   background: linear-gradient(90deg, #2c5f2d 0%, #97bc62 100%);
-
   border-radius: 15px;
-
   transition: width 1s ease;
-
   width: 0%;
-
 }
-
-
 
 .progress-text {
-
   position: absolute;
-
   top: 0;
-
   left: 50%;
-
   transform: translateX(-50%);
-
   height: 100%;
-
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
   color: black;
-
   font-weight: bold;
-
   pointer-events: none;
-
 }
-
-
 
 #login-btn,
-
 #logout-btn {
-
   background: white;
-
   color: #2c5f2d;
-
   border: none;
-
   padding: 10px 20px;
-
   border-radius: 5px;
-
   font-size: 1rem;
-
   cursor: pointer;
-
   font-weight: 600;
-
   transition: transform 0.2s, box-shadow 0.2s;
-
 }
-
-
 
 label {
-
   display: flex;
-
   justify-content: flex-end;
-
 }
-
-
 
 #searching {
-
   width: 35px;
-
   height: auto;
-
   border-left: 2px solid black;
-
   padding: 10px;
-
   margin: 4px 0;
-
 }
-
-
 
 #search {
-
   flex: 1;
-
   border: none;
-
   padding: 10px;
-
   outline: none;
-
 }
 
-
-
 .park-search-img {
-
   width: 100%;
-
   height: auto;
-
 }
