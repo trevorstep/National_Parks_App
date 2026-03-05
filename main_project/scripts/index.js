@@ -92,14 +92,14 @@ async function fetchParks() {
 }
 
 function initializeMap() {
-    const map = new Map({ basemap: 'topo-vector' });
+    const map = new Map({ basemap: 'gray-vector' });
 
     const view = new MapView({
       container: 'viewDiv',
       map: map,
       center: [-98.5795, 39.8283],
       zoom: 4,
-      constraints: { minZoom: 3, maxZoom: 18, rotationEnabled: false },
+      constraints: { minZoom: 3, maxZoom: 16, rotationEnabled: false },
       popup: {
         dockEnabled: true,
         dockOptions: { buttonEnabled: false, breakpoint: false, position: "top-right" },
@@ -116,7 +116,6 @@ function initializeMap() {
       createParkMarkers(parks, Graphic, graphicsLayerRef, visitedParksSet);
       view.container.addEventListener('change', handleVisitedCheckboxChange);
       
-      // This is the correct place to hide the loader
       hideLoader();
     });
 }
@@ -230,14 +229,7 @@ function createParkMarkers(parks, Graphic, graphicsLayer, visitedParksSet) {
                 attributes: { ...park, visited: visited },
                 popupTemplate: {
                     title: "{fullName}",
-                    content: async (feature) => {
-                        showLoader();
-                        // Use a timeout to ensure the loader is visible before blocking the thread
-                        await new Promise(resolve => setTimeout(resolve, 10)); 
-                        const content = await createPopupContent(feature.graphic.attributes);
-                        hideLoader();
-                        return content;
-                    }
+                    content: createPopupContent
                 }
             });
             graphicsLayer.add(marker);
