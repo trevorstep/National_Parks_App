@@ -8,6 +8,7 @@ import GraphicsLayer from "https://js.arcgis.com/4.32/@arcgis/core/layers/Graphi
 let visitedParksSet = new Set();
 let isInitialLoad = true;
 let viewRef = null;
+let graphicsLayerRef = null;
 
 // --- Main Application Startup ---
 async function main() {
@@ -93,6 +94,9 @@ async function fetchParks() {
 
 function initializeMap() {
     const map = new Map({ basemap: 'terrain' });
+    const graphicsLayer = new GraphicsLayer();
+    map.add(graphicsLayer);
+    graphicsLayerRef = graphicsLayer;
 
     const view = new MapView({
       container: 'viewDiv',
@@ -114,7 +118,7 @@ function initializeMap() {
 
     view.when(async () => {
       const parks = await fetchParks();
-      createParkMarkers(parks, Graphic, view, visitedParksSet);
+      createParkMarkers(parks, graphicsLayer, visitedParksSet);
       view.container.addEventListener('change', handleVisitedCheckboxChange);
       
       hideLoader();
@@ -210,7 +214,7 @@ async function fetchParkAlerts(parkCode, container) {
 
 
 // --- Park Markers ---
-function createParkMarkers(parks, Graphic, graphicsLayer, visitedParksSet) {
+function createParkMarkers(parks, graphicsLayer, visitedParksSet) {
     if (!parks || !Array.isArray(parks)) return;
     parks.forEach((park) => {
         if (!park.latLong) return;
