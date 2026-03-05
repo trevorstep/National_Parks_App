@@ -127,10 +127,11 @@ function initializeMap() {
 }
 
 // --- Popup Content ---
-function createPopupContent(attributes) {
+async function createPopupContent(attributes) {
   const container = document.createElement('div');
   container.className = 'popup-content';
 
+  // Images
   if (attributes.images && attributes.images.length > 0) {
     const imagesDiv = document.createElement('div');
     imagesDiv.className = 'popup-images';
@@ -144,11 +145,13 @@ function createPopupContent(attributes) {
     container.appendChild(imagesDiv);
   }
 
+  // Description
   const description = document.createElement('p');
   description.className = 'popup-description';
   description.textContent = attributes.description || "No description available";
   container.appendChild(description);
 
+  // Visited Checkbox
   const checkboxContainer = document.createElement('div');
   checkboxContainer.className = 'popup-checkbox-container';
   const label = document.createElement('label');
@@ -165,7 +168,44 @@ function createPopupContent(attributes) {
   checkboxContainer.appendChild(label);
   container.appendChild(checkboxContainer);
 
+  // Park Alerts
+  const alertsContainer = document.createElement('div');
+  alertsContainer.className = 'popup-alerts';
+  container.appendChild(alertsContainer);
+  // Intentionally call this without await to let it load in the background
+  fetchParkAlerts(attributes.parkCode, alertsContainer); 
+
   return container;
+}
+
+async function fetchParkAlerts(parkCode, container) {
+  container.innerHTML = '<div class="loader-small"></div>';
+  try {
+    const response = await fetch(`/park-alerts/${parkCode}`);
+    const alerts = await response.json();
+    
+    if (!response.ok) {
+        throw new Error(alerts.message || 'Failed to fetch alerts');
+    }
+
+    if (alerts && alerts.length > 0) {
+      container.innerHTML = '<h3>Park Alerts</h3>';
+      alerts.slice(0, 3).forEach(alert => {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert-item';
+        alertDiv.innerHTML = `
+          <h4>${alert.title}</h4>
+          <p>${alert.description}</p>
+        `;
+        container.appendChild(alertDiv);
+      });
+    } else {
+      container.innerHTML = '<p>No current alerts for this park.</p>';
+    }
+  } catch (error) {
+    console.error(`Error fetching alerts for ${parkCode}:`, error);
+    container.innerHTML = `<p class="error-text">Could not load park alerts.</p>`;
+  }
 }
 
 
@@ -197,8 +237,9 @@ function createParkMarkers(parks, Graphic, graphicsLayer, visitedParksSet) {
                     title: "{fullName}",
                     content: async (feature) => {
                         showLoader();
+                        // Use a timeout to ensure the loader is visible before blocking the thread
                         await new Promise(resolve => setTimeout(resolve, 10)); 
-                        const content = createPopupContent(feature.graphic.attributes);
+                        const content = await createPopupContent(feature.graphic.attributes);
                         hideLoader();
                         return content;
                     }
