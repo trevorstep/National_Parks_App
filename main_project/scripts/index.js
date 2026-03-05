@@ -364,7 +364,7 @@ function filterAndSortParks(data, searchTerm) {
         park.description.toLowerCase().includes(searchTerm) ||
         park.activities.some(a => a.toLowerCase().includes(searchTerm)) ||
         park.topics.some(t => t.toLowerCase().includes(searchTerm)) ||
-        park.states.toLowerCase()..includes(searchTerm)
+        park.states.toLowerCase().includes(searchTerm)
     );
     return filtered.sort((a, b) => a.fullName.localeCompare(b.fullName));
 }
