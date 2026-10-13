@@ -76,7 +76,7 @@ header p {
   background: white;
   color: #2c5f2d;
   border: none;
-  padding: 5px 10px;
+  padding: 10px 20px;
   border-radius: 5px;
   font-size: 1rem;
   cursor: pointer;
@@ -143,52 +143,9 @@ main {
   transition: transform 0.2s;
 }
 
-.park-search-img {
-  width: 100%;
-  height: auto;
-}
-
 .popup-images img:hover {
   transform: scale(1.05);
   border-color: #2c5f2d;
-}
-
-.popup-images-hidden {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 15px;
-  flex-wrap: wrap;
-}
-
-.popup-images-hidden img {
-  width: 100px;
-  height: 100px;
-  object-fit: cover;
-  border-radius: 8px;
-  border: 2px solid #ddd;
-  transition: transform 0.2s;
-}
-
-.popup-images-hidden img:hover {
-  transform: scale(1.05);
-  border-color: #2c5f2d;
-}
-
-.see-more-btn {
-  background: #2c5f2d;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 5px;
-  font-size: 0.9rem;
-  cursor: pointer;
-  margin-bottom: 15px;
-  font-weight: 500;
-  transition: background 0.2s;
-}
-
-.see-more-btn:hover {
-  background: #1a3a1a;
 }
 
 .popup-description {
@@ -234,22 +191,6 @@ main {
   font-size: 1rem;
 }
 
-/* Stuff I added for wdd 131 */
-#searching {
-  width: 20px;
-  height: auto;
-  border-left: 2px solid black;
-  padding: 10px;
-  margin: 4px 0;
-}
-
-#search {
-  flex: 1;
-  border: none;
-  padding: 10px;
-  outline: none;
-}
-
 footer {
   background: linear-gradient(135deg, #97bc62 0%, #2c5f2d 100%);
   color: white;
@@ -270,19 +211,10 @@ a {
   color: white;
 }
 
-park-img park-search-img {
-  width: 100%;
-  height: auto;
-}
-
 form {
   border-radius: 5px;
   background-color: #f2f2f2;
   padding: 20px;
-}
-
-label {
-  display: block;
 }
 
 hr {
@@ -319,7 +251,7 @@ hr {
   }
 
   .loader {
-    position: absolute;
+    position: fixed; /* centered on screen, over the map */
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
@@ -364,19 +296,6 @@ hr {
   pointer-events: none;
 }
 
-#login-btn,
-#logout-btn {
-  background: white;
-  color: #2c5f2d;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 5px;
-  font-size: 1rem;
-  cursor: pointer;
-  font-weight: 600;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
 label {
   display: flex;
   justify-content: flex-end;
@@ -400,4 +319,12 @@ label {
 .park-search-img {
   width: 100%;
   height: auto;
+}
+
+/* Desktop: match the random park card to the map width */
+@media (min-width: 901px) {
+  #parks-container {
+    width: 90%;
+    margin: 0 auto;
+  }
 }

@@ -87,7 +87,7 @@ async function loadParksIntoDropdown() {
     // If that fails, try loading from the JSON file directly
     if (!response.ok) {
       console.log('API endpoint not available, loading from JSON file');
-      response = await fetch('./data/NationalParks.json');
+      response = await fetch('./data/nationalParks.json');
     }
     
     const parks = await response.json();
@@ -162,47 +162,61 @@ async function loadAllEntries() {
 
 function displayEntries(entries) {
   const container = document.getElementById('entries-container');
-  container.innerHTML = '';
-  
+  container.replaceChildren();
+
   entries.forEach(entry => {
     const formatted = formatEntryDate(entry.createdAt);
-    
+
     const lines = entry.description.split('\n\n');
     const title = lines[0];
     const text = lines.slice(1).join('\n\n') || lines[0];
-    
-    const entryCard = document.createElement('div');
-    entryCard.className = 'entry-card';
-    entryCard.innerHTML = `
-      <div class="entry-header">
-        <h3 class="entry-title">${title}</h3>
-        <div class="entry-meta">
-          <span class="park-name">${entry.parkName}</span>
-          <span class="entry-date">${formatted.date}</span>
-        </div>
-      </div>
-      <div class="entry-body">
-        <p class="entry-text">${text}</p>
-      </div>
-      <div class="entry-actions">
-        <button class="delete-btn" data-id="${entry.id}">Delete</button>
-      </div>
-    `;
-    
-    container.appendChild(entryCard);
-  });
-  
-  document.querySelectorAll('.delete-btn').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      const entryId = e.target.dataset.id;
-      if (confirm('Are you sure you want to delete this entry?')) {
-        try {
-          await deleteJournalEntry(entryId);
-          await loadAllEntries();
-        } catch (error) {
-          alert('Failed to delete entry');
-        }
+
+    // Built with textContent (not innerHTML) so entry text can never run as HTML
+    const card = document.createElement('div');
+    card.className = 'entry-card';
+
+    const header = document.createElement('div');
+    header.className = 'entry-header';
+
+    const titleEl = document.createElement('h3');
+    titleEl.className = 'entry-title';
+    titleEl.textContent = title;
+
+    const meta = document.createElement('div');
+    meta.className = 'entry-meta';
+    const parkName = document.createElement('span');
+    parkName.className = 'park-name';
+    parkName.textContent = entry.parkName;
+    const dateEl = document.createElement('span');
+    dateEl.className = 'entry-date';
+    dateEl.textContent = formatted.date;
+    meta.append(parkName, dateEl);
+    header.append(titleEl, meta);
+
+    const body = document.createElement('div');
+    body.className = 'entry-body';
+    const textEl = document.createElement('p');
+    textEl.className = 'entry-text';
+    textEl.textContent = text;
+    body.appendChild(textEl);
+
+    const actions = document.createElement('div');
+    actions.className = 'entry-actions';
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'delete-btn';
+    deleteBtn.textContent = 'Delete';
+    deleteBtn.addEventListener('click', async () => {
+      if (!confirm('Are you sure you want to delete this entry?')) return;
+      try {
+        await deleteJournalEntry(entry.id);
+        await loadAllEntries();
+      } catch (error) {
+        alert('Failed to delete entry');
       }
     });
+    actions.appendChild(deleteBtn);
+
+    card.append(header, body, actions);
+    container.appendChild(card);
   });
 }

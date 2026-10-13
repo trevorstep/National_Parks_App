@@ -4,9 +4,14 @@ import Map from "https://js.arcgis.com/4.32/@arcgis/core/Map.js";
 import MapView from "https://js.arcgis.com/4.32/@arcgis/core/views/MapView.js";
 import Graphic from "https://js.arcgis.com/4.32/@arcgis/core/Graphic.js";
 import GraphicsLayer from "https://js.arcgis.com/4.32/@arcgis/core/layers/GraphicsLayer.js";
+import * as webMercatorUtils from "https://js.arcgis.com/4.32/@arcgis/core/geometry/support/webMercatorUtils.js";
+
+// Basemap: swap this one value to try another style, e.g. 'gray-vector' or 'light-gray-vector'
+const BASEMAP = 'topo-vector';
+// How far from a marker (in px) a touch can land and still select it
+const TAP_RADIUS_PX = 30;
 
 let visitedParksSet = new Set();
-let isInitialLoad = true;
 let viewRef = null;
 let graphicsLayerRef = null;
 
@@ -16,8 +21,6 @@ async function main() {
   
   // Initialize all components
   initAuth();
-  initializeModal();
-  initializeMenuButton();
   initializeParkSearch();
   
   // Start loading the map (the longest async task)
@@ -56,7 +59,6 @@ window.addEventListener('userLoggedIn', async () => {
   if (window.mapInitialized) {
     updateAllMarkerColors();
   }
-  isInitialLoad = false;
 });
 
 window.addEventListener('userLoggedOut', () => {
@@ -93,7 +95,7 @@ async function fetchParks() {
 }
 
 function initializeMap() {
-    const map = new Map({ basemap: 'terrain' });
+    const map = new Map({ basemap: BASEMAP });
     const graphicsLayer = new GraphicsLayer();
     map.add(graphicsLayer);
     graphicsLayerRef = graphicsLayer;
@@ -119,10 +121,43 @@ function initializeMap() {
     view.when(async () => {
       const parks = await fetchParks();
       createParkMarkers(parks, graphicsLayer, visitedParksSet);
+      if (window.matchMedia('(pointer: coarse)').matches) {
+        enableLargeTapTargets(view, graphicsLayer);
+      }
       view.container.addEventListener('change', handleVisitedCheckboxChange);
       
       hideLoader();
     });
+}
+
+// --- Mobile tap targets ---
+// On touch screens a tap selects the nearest marker within TAP_RADIUS_PX,
+// instead of requiring a direct hit on the 14px dot. Desktop is unchanged.
+function enableLargeTapTargets(view, graphicsLayer) {
+  view.popupEnabled = false; // popups are opened manually below
+
+  view.on('click', (event) => {
+    let nearest = null;
+    let nearestLocation = null;
+    let nearestDistance = TAP_RADIUS_PX;
+
+    graphicsLayer.graphics.forEach((graphic) => {
+      const location = webMercatorUtils.geographicToWebMercator(graphic.geometry);
+      const screenPoint = view.toScreen(location);
+      const distance = Math.hypot(screenPoint.x - event.x, screenPoint.y - event.y);
+      if (distance <= nearestDistance) {
+        nearest = graphic;
+        nearestLocation = location;
+        nearestDistance = distance;
+      }
+    });
+
+    if (nearest) {
+      view.openPopup({ features: [nearest], location: nearestLocation });
+    } else {
+      view.closePopup();
+    }
+  });
 }
 
 // --- Popup Content ---
@@ -196,10 +231,11 @@ async function fetchParkAlerts(parkCode, container) {
       alerts.slice(0, 3).forEach(alert => {
         const alertDiv = document.createElement('div');
         alertDiv.className = 'alert-item';
-        alertDiv.innerHTML = `
-          <h4>${alert.title}</h4>
-          <p>${alert.description}</p>
-        `;
+        const alertTitle = document.createElement('h4');
+        alertTitle.textContent = alert.title;
+        const alertText = document.createElement('p');
+        alertText.textContent = alert.description;
+        alertDiv.append(alertTitle, alertText);
         details.appendChild(alertDiv);
       });
       container.appendChild(details);
@@ -297,44 +333,7 @@ async function handleVisitedCheckboxChange(event) {
     }
 }
 
-// --- UI Components (Modal, Menu, Search) ---
-function initializeModal() {
-    const modal = document.querySelector('dialog');
-    if (modal) {
-        const modalImage = modal.querySelector('img');
-        const closeButton = modal.querySelector('.close-viewer');
-        const gallery = document.querySelector('.gallery');
-        if (gallery) gallery.addEventListener('click', (e) => openModal(e, modal, modalImage));
-        if (closeButton) closeButton.addEventListener('click', () => modal.close());
-        modal.addEventListener('click', (event) => {
-            if (event.target === modal) modal.close();
-        });
-    }
-}
-
-function openModal(e, modal, modalImage) {
-  if (e.target.tagName === 'IMG') {
-    const src = e.target.getAttribute('src');
-    const alt = e.target.getAttribute('alt');
-    const full = src.replace('low', 'high');
-    modalImage.src = full;
-    modalImage.alt = alt;
-    modal.showModal();
-  }
-}
-
-function initializeMenuButton() {
-    const btn = document.querySelector('.menu-btn');
-    if (btn) btn.addEventListener('click', togglemenu);
-}
-
-function togglemenu() {
-    const menu = document.querySelector('nav');
-    const btn = document.querySelector('.menu-btn');
-    if (menu) menu.classList.toggle('hide');
-    if (btn) btn.classList.toggle('change');
-}
-
+// --- UI Components (Search) ---
 function initializeParkSearch() {
     fetch("./data/nationalParks.json")
       .then(response => response.json())
@@ -357,8 +356,7 @@ function initializeParkSearch() {
 }
 
 function displayParks(parks, container) {
-    container.innerHTML = '';
-    parks.forEach(park => container.innerHTML += parkTemplate(park));
+    container.innerHTML = parks.map(parkTemplate).join('');
 }
 
 function filterAndSortParks(data, searchTerm) {
@@ -373,22 +371,33 @@ function filterAndSortParks(data, searchTerm) {
     return filtered.sort((a, b) => a.fullName.localeCompare(b.fullName));
 }
 
+function escapeHTML(value) {
+  const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+  return String(value ?? '').replace(/[&<>"']/g, ch => map[ch]);
+}
+
 function parkTemplate(data) {
+  const code = escapeHTML(data.parkCode);
+  const alt = escapeHTML(data.images?.[0]?.altText || data.fullName);
+  // activities and topics are plain strings in nationalParks.json
+  const activities = escapeHTML(data.activities.slice(0, 3).join(", "));
+  const topics = escapeHTML(data.topics.slice(0, 3).join(", "));
+
   return `
     <div class="park-container">
       <picture>
-        <source media="(min-width: 901px)" srcset="/images/parks/high/${data.parkCode}_0.jpg">
-        <img class="park-img park-search-img" 
-             src="/images/parks/low/${data.parkCode}_0.jpg"
-             alt="${data.images?.[0]?.altText || data.fullName}">
+        <source media="(min-width: 901px)" srcset="/images/parks/high/${code}_0.jpg">
+        <img class="park-img park-search-img"
+             src="/images/parks/low/${code}_0.jpg"
+             alt="${alt}">
       </picture>
       <div class="park-contents">
-        <h2>${data.fullName}</h2>
-        <div class="description">${data.description}</div>
-        <p><strong>Activities:</strong> ${data.activities.map(a => a.name).slice(0, 3).join(", ")}</p>
-        <p><strong>Topics:</strong> ${data.topics.map(t => t.name).slice(0, 3).join(", ")}</p>
+        <h2>${escapeHTML(data.fullName)}</h2>
+        <div class="description">${escapeHTML(data.description)}</div>
+        <p><strong>Activities:</strong> ${activities}</p>
+        <p><strong>Topics:</strong> ${topics}</p>
       </div>
-      <hr> 
+      <hr>
     </div>
   `;
 }

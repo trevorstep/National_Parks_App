@@ -4,13 +4,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta description="Track your visits to National Parks across the USA">
   <meta name="description" content="Track your visits to National Parks across the USA! Log your memories for every trip along the way!">
   <title>National Parks Tracker</title>
   <link rel="stylesheet" href="https://js.arcgis.com/4.32/esri/themes/light/main.css">
   <link rel="stylesheet" href="styles/styles.css">
 </head>
 
+<body>
   <header>
     <div class="loader"></div>
     <div class="header-content">
@@ -46,28 +46,10 @@
 
   </main>
 
-  <template id="popup-template">
-    <div class="popup-content">
-      <div class="popup-images"></div>
-      <p class="popup-description"></p>
-      <div class="popup-checkbox-container">
-        <label class="checkbox-label">
-          <input type="checkbox" class="visited-checkbox">
-          <span>I've been here!</span>
-        </label>
-      </div>
-    </div>
-  </template>
-
       <footer>
         <a href="logMemories.html">Log memories</a>
         <p>&copy; 2025</p>
     </footer>
-
-    <script src="https://js.arcgis.com/4.32/"></script>
-    <script>
-        require(["esri/config"]);
-    </script>
   <script type="module" src="scripts/index.js"></script>
 </body>
 
