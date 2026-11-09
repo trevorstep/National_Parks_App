@@ -389,15 +389,22 @@ function displayParks(parks, container) {
 }
 
 function filterAndSortParks(data, searchTerm) {
-    const filtered = data.filter(park =>
-        park.fullName.toLowerCase().includes(searchTerm) ||
-        park.parkCode.toLowerCase().includes(searchTerm) ||
-        park.description.toLowerCase().includes(searchTerm) ||
-        park.activities.some(a => a.toLowerCase().includes(searchTerm)) ||
-        park.topics.some(t => t.toLowerCase().includes(searchTerm)) ||
-        park.states.toLowerCase().includes(searchTerm)
-    );
-    return filtered.sort((a, b) => a.fullName.localeCompare(b.fullName));
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return [...data].sort((a, b) => a.fullName.localeCompare(b.fullName));
+
+    const ranked = data.map(park => {
+        const name = park.fullName.toLowerCase();
+        const code = park.parkCode.toLowerCase();
+        const titleRank = name === term || code === term ? 0 : name.startsWith(term) || code.startsWith(term) ? 1 : name.includes(term) || code.includes(term) ? 2 : null;
+        const broadMatch = park.description.toLowerCase().includes(term) ||
+          park.activities.some(activity => activity.toLowerCase().includes(term)) ||
+          park.topics.some(topic => topic.toLowerCase().includes(term)) ||
+          park.states.toLowerCase().includes(term);
+        if (titleRank === null && !broadMatch) return null;
+        return { park, rank: titleRank ?? 10 };
+    }).filter(Boolean);
+
+    return ranked.sort((a, b) => a.rank - b.rank || a.park.fullName.localeCompare(b.park.fullName)).map(item => item.park);
 }
 
 function escapeHTML(value) {
