@@ -1,222 +1,131 @@
 import { initAuth } from './auth.js';
-import { auth, db, collection, addDoc, query, where, orderBy, getDocs, deleteDoc, doc } from './firebase-config.js';
+import { auth, db, collection, addDoc, query, where, orderBy, getDocs, deleteDoc, updateDoc, doc } from './firebase-config.js';
 
 initAuth();
+const MAX_TITLE = 120;
+const MAX_TEXT = 12000;
+let allEntries = [];
+let filteredEntries = [];
+let currentPage = 0;
+let editingId = null;
 
-// Journal functions
-async function saveJournalEntry(parkCode, parkName, description) {
+const pageSize = () => window.matchMedia('(max-width: 700px)').matches ? 3 : 6;
+const clean = (value, max) => String(value || '').trim().slice(0, max);
+function splitDescription(description) {
+  const lines = String(description || '').split('\n\n');
+  return { title: lines[0] || 'Untitled memory', text: lines.slice(1).join('\n\n') || lines[0] || '' };
+}
+
+async function saveJournalEntry(parkCode, parkName, title, text) {
   const user = auth.currentUser;
   if (!user) throw new Error('You must be logged in to save journal entries');
-  if (!description || description.trim() === '') throw new Error('Journal entry cannot be empty');
-
-  const entryData = {
-    userId: user.uid,
-    parkCode: parkCode,
-    parkName: parkName,
-    description: description.trim(),
-    createdAt: new Date(),
-    timestamp: Date.now()
-  };
-
-  const docRef = await addDoc(collection(db, 'journalEntries'), entryData);
-  console.log('Journal entry saved:', docRef.id);
-  return docRef.id;
+  const cleanTitle = clean(title, MAX_TITLE);
+  const cleanText = clean(text, MAX_TEXT);
+  if (!parkCode || !/^[a-z0-9]{4,5}$/.test(parkCode)) throw new Error('Choose a valid park');
+  if (!cleanTitle || !cleanText) throw new Error('Title and journal entry are required');
+  const entryData = { userId: user.uid, parkCode, parkName: clean(parkName, 160), description: `${cleanTitle}\n\n${cleanText}`, timestamp: Date.now(), updatedAt: Date.now() };
+  if (editingId) await updateDoc(doc(db, 'journalEntries', editingId), entryData);
+  else { entryData.createdAt = new Date(); await addDoc(collection(db, 'journalEntries'), entryData); }
 }
 
 async function getAllJournalEntries() {
-  const user = auth.currentUser;
-  if (!user) return [];
-
-  const q = query(
-    collection(db, 'journalEntries'),
-    where('userId', '==', user.uid),
-    orderBy('timestamp', 'desc')
-  );
-
-  const querySnapshot = await getDocs(q);
-  const entries = [];
-
-  querySnapshot.forEach((doc) => {
-    entries.push({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate() || new Date(doc.data().timestamp)
-    });
-  });
-
-  return entries;
+  if (!auth.currentUser) return [];
+  const snapshot = await getDocs(query(collection(db, 'journalEntries'), where('userId', '==', auth.currentUser.uid), orderBy('timestamp', 'desc')));
+  return snapshot.docs.map(item => ({ id: item.id, ...item.data(), createdAt: item.data().createdAt?.toDate?.() || new Date(item.data().timestamp || Date.now()) }));
 }
 
-async function deleteJournalEntry(entryId) {
-  const user = auth.currentUser;
-  if (!user) throw new Error('You must be logged in to delete entries');
-  await deleteDoc(doc(db, 'journalEntries', entryId));
-  console.log('Entry deleted:', entryId);
-}
-
-function formatEntryDate(date) {
-  const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
-  const timeOptions = { hour: 'numeric', minute: '2-digit', hour12: true };
-
-  return {
-    date: date.toLocaleDateString('en-US', dateOptions),
-    time: date.toLocaleTimeString('en-US', timeOptions),
-    full: `${date.toLocaleDateString('en-US', dateOptions)} at ${date.toLocaleTimeString('en-US', timeOptions)}`
-  };
-}
-
-let allEntries = [];
-
-window.addEventListener('userLoggedIn', async () => {
-  console.log('User logged in, loading entries...');
-  await loadParksIntoDropdown();
-  await loadAllEntries();
-});
-
-window.addEventListener('userLoggedOut', () => {
-  console.log('User logged out');
-  document.getElementById('entries-container').innerHTML = '<p>Please sign in to view your entries.</p>';
-  document.getElementById('park-select').innerHTML = '<option value="">-- Choose a Park --</option>';
-});
-
-async function loadParksIntoDropdown() {
-  try {
-    // Try the API endpoint first
-    let response = await fetch('/national-parks');
-    
-    // If that fails, try loading from the JSON file directly
-    if (!response.ok) {
-      console.log('API endpoint not available, loading from JSON file');
-      response = await fetch('./data/nationalParks.json');
-    }
-    
-    const parks = await response.json();
-    
-    const select = document.getElementById('park-select');
-    select.innerHTML = '<option value="">-- Choose a Park --</option>';
-    
-    parks.sort((a, b) => a.fullName.localeCompare(b.fullName));
-    
-    parks.forEach(park => {
-      const option = document.createElement('option');
-      option.value = park.parkCode;
-      option.textContent = park.fullName;
-      option.dataset.parkName = park.fullName;
-      select.appendChild(option);
-    });
-    
-    console.log(`Loaded ${parks.length} parks into dropdown`);
-  } catch (error) {
-    console.error('Error loading parks:', error);
-    alert('Failed to load parks list. Please refresh the page.');
-  }
-}
-
-const form = document.getElementById('journal-form');
-form.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  
-  const parkSelect = document.getElementById('park-select');
-  const parkCode = parkSelect.value;
-  const parkName = parkSelect.selectedOptions[0].dataset.parkName;
-  const title = document.getElementById('entry-title').value;
-  const text = document.getElementById('entry-text').value;
-  
-  const description = `${title}\n\n${text}`;
-  
-  const submitBtn = document.getElementById('submit-btn');
-  submitBtn.disabled = true;
-  submitBtn.textContent = 'Saving...';
-  
-  try {
-    await saveJournalEntry(parkCode, parkName, description);
-    alert('Entry saved successfully!');
-    form.reset();
-    await loadAllEntries();
-  } catch (error) {
-    console.error('Error saving entry:', error);
-    alert('Failed to save entry: ' + error.message);
-  } finally {
-    submitBtn.disabled = false;
-    submitBtn.textContent = 'Save Entry';
-  }
-});
-
-async function loadAllEntries() {
-  const container = document.getElementById('entries-container');
-  
-  try {
-    allEntries = await getAllJournalEntries();
-    
-    if (allEntries.length === 0) {
-      container.innerHTML = '<p class="no-entries">No journal entries yet. Start writing about your park adventures!</p>';
-      return;
-    }
-    
-    displayEntries(allEntries);
-  } catch (error) {
-    console.error('Error loading entries:', error);
-    container.innerHTML = '<p class="error">Failed to load entries. Please refresh the page.</p>';
-  }
-}
-
-function displayEntries(entries) {
+function setStatus(message, className = 'no-entries') {
   const container = document.getElementById('entries-container');
   container.replaceChildren();
-
-  entries.forEach(entry => {
-    const formatted = formatEntryDate(entry.createdAt);
-
-    const lines = entry.description.split('\n\n');
-    const title = lines[0];
-    const text = lines.slice(1).join('\n\n') || lines[0];
-
-    // Built with textContent (not innerHTML) so entry text can never run as HTML
-    const card = document.createElement('div');
-    card.className = 'entry-card';
-
-    const header = document.createElement('div');
-    header.className = 'entry-header';
-
-    const titleEl = document.createElement('h3');
-    titleEl.className = 'entry-title';
-    titleEl.textContent = title;
-
-    const meta = document.createElement('div');
-    meta.className = 'entry-meta';
-    const parkName = document.createElement('span');
-    parkName.className = 'park-name';
-    parkName.textContent = entry.parkName;
-    const dateEl = document.createElement('span');
-    dateEl.className = 'entry-date';
-    dateEl.textContent = formatted.date;
-    meta.append(parkName, dateEl);
-    header.append(titleEl, meta);
-
-    const body = document.createElement('div');
-    body.className = 'entry-body';
-    const textEl = document.createElement('p');
-    textEl.className = 'entry-text';
-    textEl.textContent = text;
-    body.appendChild(textEl);
-
-    const actions = document.createElement('div');
-    actions.className = 'entry-actions';
-    const deleteBtn = document.createElement('button');
-    deleteBtn.className = 'delete-btn';
-    deleteBtn.textContent = 'Delete';
-    deleteBtn.addEventListener('click', async () => {
-      if (!confirm('Are you sure you want to delete this entry?')) return;
-      try {
-        await deleteJournalEntry(entry.id);
-        await loadAllEntries();
-      } catch (error) {
-        alert('Failed to delete entry');
-      }
-    });
-    actions.appendChild(deleteBtn);
-
-    card.append(header, body, actions);
-    container.appendChild(card);
-  });
+  const element = document.createElement('p');
+  element.className = className;
+  element.textContent = message;
+  container.appendChild(element);
 }
+
+function displayEntries() {
+  const container = document.getElementById('entries-container');
+  const size = pageSize();
+  const totalPages = Math.max(1, Math.ceil(filteredEntries.length / size));
+  currentPage = Math.min(currentPage, totalPages - 1);
+  const visible = filteredEntries.slice(currentPage * size, (currentPage + 1) * size);
+  container.replaceChildren();
+  if (!visible.length) setStatus(allEntries.length ? 'No entries match your filters.' : 'No journal entries yet. Start writing about your park adventures!');
+  visible.forEach(entry => {
+    const parts = splitDescription(entry.description);
+    const card = document.createElement('article');
+    card.className = 'entry-card';
+    const title = document.createElement('h3'); title.className = 'entry-title'; title.textContent = parts.title;
+    const meta = document.createElement('div'); meta.className = 'entry-meta';
+    const park = document.createElement('span'); park.className = 'park-name'; park.textContent = entry.parkName;
+    const date = document.createElement('time'); date.className = 'entry-date'; date.dateTime = entry.createdAt.toISOString(); date.textContent = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).format(entry.createdAt);
+    meta.append(park, date);
+    const body = document.createElement('p'); body.className = 'entry-text'; body.textContent = parts.text;
+    const actions = document.createElement('div'); actions.className = 'entry-actions';
+    const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'edit-btn'; edit.textContent = 'Edit'; edit.addEventListener('click', () => beginEdit(entry));
+    const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'delete-btn'; remove.textContent = 'Delete';
+    remove.addEventListener('click', async () => { if (!confirm('Are you sure you want to delete this entry?')) return; try { await deleteDoc(doc(db, 'journalEntries', entry.id)); await loadAllEntries(); } catch { setStatus('Could not delete that entry.', 'error'); } });
+    actions.append(edit, remove); card.append(title, meta, body, actions); container.appendChild(card);
+  });
+  document.getElementById('journal-prev').disabled = currentPage === 0;
+  document.getElementById('journal-next').disabled = currentPage >= totalPages - 1;
+  document.getElementById('journal-page-indicator').textContent = filteredEntries.length ? `Page ${currentPage + 1} of ${totalPages}` : '';
+}
+
+function applyFilters() {
+  const search = clean(document.getElementById('journal-search').value, 80).toLowerCase();
+  const sort = document.getElementById('journal-sort').value;
+  filteredEntries = allEntries.filter(entry => { const parts = splitDescription(entry.description); return [parts.title, parts.text, entry.parkName].some(value => String(value).toLowerCase().includes(search)); });
+  filteredEntries.sort((a, b) => sort === 'alphabetical' ? a.parkName.localeCompare(b.parkName) || a.createdAt - b.createdAt : sort === 'reverse-chronological' ? a.createdAt - b.createdAt : b.createdAt - a.createdAt);
+  currentPage = 0; displayEntries();
+}
+
+function beginEdit(entry) {
+  const parts = splitDescription(entry.description);
+  document.getElementById('park-select').value = entry.parkCode;
+  document.getElementById('entry-title').value = parts.title;
+  document.getElementById('entry-text').value = parts.text;
+  editingId = entry.id;
+  document.getElementById('submit-btn').textContent = 'Save Changes';
+  document.getElementById('cancel-edit-btn').hidden = false;
+  document.getElementById('journal-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function cancelEdit() {
+  editingId = null; document.getElementById('journal-form').reset();
+  document.getElementById('submit-btn').textContent = 'Save Entry';
+  document.getElementById('cancel-edit-btn').hidden = true;
+}
+
+async function loadParksIntoDropdown() {
+  const parks = await (await fetch('./data/nationalParks.json')).json();
+  const select = document.getElementById('park-select'); select.replaceChildren(new Option('-- Choose a Park --', ''));
+  parks.sort((a, b) => a.fullName.localeCompare(b.fullName)).forEach(park => { const option = new Option(park.fullName, park.parkCode); option.dataset.parkName = park.fullName; select.appendChild(option); });
+}
+
+async function loadAllEntries() { try { allEntries = await getAllJournalEntries(); applyFilters(); } catch (error) { console.error(error); setStatus('Failed to load entries. Please refresh the page.', 'error'); } }
+
+window.addEventListener('userLoggedIn', async () => { try { await loadParksIntoDropdown(); await loadAllEntries(); } catch { setStatus('Could not load the park list.', 'error'); } });
+window.addEventListener('userLoggedOut', () => { allEntries = []; filteredEntries = []; setStatus('Please sign in to view your entries.'); document.getElementById('park-select').replaceChildren(new Option('-- Choose a Park --', '')); });
+
+document.getElementById('journal-form').addEventListener('submit', async event => {
+  event.preventDefault(); const select = document.getElementById('park-select'); const button = document.getElementById('submit-btn'); button.disabled = true;
+  try { await saveJournalEntry(select.value, select.selectedOptions[0]?.dataset.parkName, document.getElementById('entry-title').value, document.getElementById('entry-text').value); cancelEdit(); await loadAllEntries(); }
+  catch (error) { alert(error.message); } finally { button.disabled = false; }
+});
+document.getElementById('cancel-edit-btn').addEventListener('click', cancelEdit);
+document.getElementById('journal-search').addEventListener('input', applyFilters);
+document.getElementById('journal-sort').addEventListener('change', applyFilters);
+function turnPage(direction) {
+  const book = document.getElementById('entries-container');
+  const className = direction > 0 ? 'turn-forward' : 'turn-back';
+  book.classList.remove('turn-forward', 'turn-back');
+  void book.offsetWidth;
+  book.classList.add(className);
+  currentPage += direction;
+  displayEntries();
+  window.setTimeout(() => book.classList.remove(className), 520);
+}
+document.getElementById('journal-prev').addEventListener('click', () => turnPage(-1));
+document.getElementById('journal-next').addEventListener('click', () => turnPage(1));
+window.addEventListener('resize', displayEntries);

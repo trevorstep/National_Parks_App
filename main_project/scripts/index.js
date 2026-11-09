@@ -44,12 +44,12 @@ function updateProgressBar() {
   const text = document.getElementById('progress-text');
   if (!bar || !text) return;
 
-  const totalParks = 63;
+  const totalParks = 64;
   const visitedCount = visitedParksSet.size;
   const percentage = Math.round((visitedCount / totalParks) * 100);
 
   bar.style.width = percentage + '%';
-  text.innerHTML = `${visitedCount}/${totalParks} Parks (${percentage}%)`;
+  text.textContent = `${visitedCount}/${totalParks} Parks (${percentage}%)`;
 }
 
 // --- Auth Event Listeners ---
@@ -203,6 +203,12 @@ function createPopupContent(feature) {
   checkboxContainer.appendChild(label);
   container.appendChild(checkboxContainer);
 
+  const detailLink = document.createElement('a');
+  detailLink.className = 'popup-detail-link';
+  detailLink.href = `park.html?id=${encodeURIComponent(attributes.parkId)}`;
+  detailLink.textContent = 'Explore this park';
+  container.appendChild(detailLink);
+
   // Park Alerts
   const alertsContainer = document.createElement('div');
   alertsContainer.className = 'popup-alerts';
@@ -240,11 +246,14 @@ async function fetchParkAlerts(parkCode, container) {
       });
       container.appendChild(details);
     } else {
-      container.innerHTML = '<p>No current alerts for this park.</p>';
+      container.replaceChildren(Object.assign(document.createElement('p'), { textContent: 'No current alerts for this park.' }));
     }
   } catch (error) {
     console.error(`Error fetching alerts for ${parkCode}:`, error);
-    container.innerHTML = `<p class="error-text">Could not load park alerts.</p>`;
+    const errorText = document.createElement('p');
+    errorText.className = 'error-text';
+    errorText.textContent = 'Could not load park alerts.';
+    container.replaceChildren(errorText);
   }
 }
 
@@ -314,15 +323,22 @@ async function handleVisitedCheckboxChange(event) {
         const isChecked = checkbox.checked;
         checkbox.disabled = true;
         try {
-            if (isChecked) {
-                await saveVisitedPark(parkCode);
-                visitedParksSet.add(parkCode);
-            } else {
-                await removeVisitedPark(parkCode);
-                visitedParksSet.delete(parkCode);
-            }
+        const sourceGraphic = graphicsLayerRef?.graphics.find(g => g.attributes.parkCode === parkCode);
+        const relatedCodes = sourceGraphic && graphicsLayerRef.graphics
+          .filter(g => g.attributes.latLong === sourceGraphic.attributes.latLong)
+          .map(g => g.attributes.parkCode);
+        const codesToUpdate = relatedCodes?.length > 1 ? relatedCodes : [parkCode];
+        for (const code of codesToUpdate) {
+          if (isChecked) {
+            await saveVisitedPark(code);
+            visitedParksSet.add(code);
+          } else {
+            await removeVisitedPark(code);
+            visitedParksSet.delete(code);
+          }
+        }
             updateProgressBar();
-            updateMarkerColor(parkCode, isChecked);
+            codesToUpdate.forEach(code => updateMarkerColor(code, isChecked));
         } catch (error) {
             console.error('Error updating park:', error);
             checkbox.checked = !isChecked;
@@ -341,22 +357,35 @@ function initializeParkSearch() {
         const container = document.querySelector('#parks-container');
         if (!container) return;
         const form = document.querySelector('form');
-        const randomPark = data[Math.floor(Math.random() * data.length)];
-        displayParks([randomPark], container);
+        displayParks(selectFiveParks(data), container);
         if (form) {
             form.addEventListener('submit', (e) => {
               e.preventDefault();
               const searchTerm = document.querySelector('#search').value.toLowerCase();
               const sorted = filterAndSortParks(data, searchTerm);
-              displayParks(sorted, container);
+              displayParks(sorted.slice(0, 5), container);
+              focusPark(sorted[0]);
             });
         }
       })
       .catch(err => console.error(err));
 }
 
+function selectFiveParks(data) {
+  return [...data].sort(() => Math.random() - 0.5).slice(0, 5);
+}
+
+function focusPark(park) {
+  if (!park || !viewRef || !graphicsLayerRef) return;
+  const graphic = graphicsLayerRef.graphics.find(item => item.attributes.parkCode === park.parkCode);
+  if (!graphic) return;
+  viewRef.goTo({ target: graphic.geometry, zoom: Math.max(viewRef.zoom, 7) }, { duration: 700 })
+    .then(() => viewRef.openPopup({ features: [graphic], location: graphic.geometry }))
+    .catch(() => {});
+}
+
 function displayParks(parks, container) {
-    container.innerHTML = parks.map(parkTemplate).join('');
+    container.replaceChildren(...parks.map(parkTemplate));
 }
 
 function filterAndSortParks(data, searchTerm) {
@@ -377,29 +406,26 @@ function escapeHTML(value) {
 }
 
 function parkTemplate(data) {
-  const code = escapeHTML(data.parkCode);
-  const alt = escapeHTML(data.images?.[0]?.altText || data.fullName);
-  // activities and topics are plain strings in nationalParks.json
-  const activities = escapeHTML(data.activities.slice(0, 3).join(", "));
-  const topics = escapeHTML(data.topics.slice(0, 3).join(", "));
-
-  return `
-    <div class="park-container">
-      <picture>
-        <source media="(min-width: 901px)" srcset="/images/parks/high/${code}_0.jpg">
-        <img class="park-img park-search-img"
-             src="/images/parks/low/${code}_0.jpg"
-             alt="${alt}">
-      </picture>
-      <div class="park-contents">
-        <h2>${escapeHTML(data.fullName)}</h2>
-        <div class="description">${escapeHTML(data.description)}</div>
-        <p><strong>Activities:</strong> ${activities}</p>
-        <p><strong>Topics:</strong> ${topics}</p>
-      </div>
-      <hr>
-    </div>
-  `;
+  const link = document.createElement('a');
+  link.className = 'park-container';
+  link.href = `park.html?id=${encodeURIComponent(data.parkId)}`;
+  const picture = document.createElement('picture');
+  const source = document.createElement('source');
+  source.media = '(min-width: 901px)';
+  source.srcset = data.images?.[0]?.localUrlHigh || data.images?.[0]?.url || '';
+  const image = document.createElement('img');
+  image.className = 'park-img park-search-img';
+  image.src = data.images?.[0]?.localUrlLow || data.images?.[0]?.url || '';
+  image.alt = data.images?.[0]?.altText || data.fullName;
+  image.loading = 'lazy';
+  picture.append(source, image);
+  const contents = document.createElement('div');
+  contents.className = 'park-contents';
+  const title = document.createElement('h2'); title.textContent = data.fullName;
+  const description = document.createElement('div'); description.className = 'description'; description.textContent = data.description || 'No description available.';
+  contents.append(title, description);
+  link.append(picture, contents);
+  return link;
 }
 
 // --- Run Application ---

@@ -38,6 +38,13 @@ app.get("/national-parks", (request, response) => {
 app.get("/park-alerts/:parkCode", async (request, response) => {
     try {
         const { parkCode } = request.params;
+        const metadata = JSON.parse(fs.readFileSync(
+            path.join(__dirname, 'main_project', 'data', 'metadata.json'),
+            'utf-8'
+        ));
+        if (!metadata.parkCodes.includes(parkCode)) {
+            return response.status(400).json({ error: 'Invalid park code' });
+        }
         console.log(`Fetching alerts for park: ${parkCode}`);
         
         const res = await fetch(
@@ -98,6 +105,10 @@ app.post("/refresh-parks-data", async (request, response) => {
                 entranceFees: park.entranceFees,
                 operatingHours: park.operatingHours
             }));
+
+        if (nationalParks.length < 64) {
+            throw new Error(`NPS response contained ${nationalParks.length} national park records; refusing to overwrite the 64-record dataset`);
+        }
         
         const dataDir = path.join(__dirname, 'main_project', 'data');
         if (!fs.existsSync(dataDir)) {

@@ -6,13 +6,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Track your visits to National Parks across the USA">
     <title>National Parks Tracker</title>
+    <link rel="icon" type="image/svg+xml" href="images/park-sign.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@400;500;600;700&family=Rye&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles/memoreiesLog.css">
+    <link rel="stylesheet" href="styles/sign.css">
 </head>
 
 <body>
     <header>
+        <div class="park-sign-stage" role="img" aria-label="National Park Service style entrance sign"><div class="sign"><div class="post post-left"></div><div class="post post-right"></div><div class="top-beam"></div><div class="chain chain-left"></div><div class="chain chain-right"></div><div class="park-emblem"><span>NP</span></div><div class="plaque"><svg class="mountains" viewBox="0 0 220 65" xmlns="http://www.w3.org/2000/svg"><path d="M8 54 L32 33 L45 43 L67 13 L86 36 L101 26 L119 41 L145 17 L164 34 L180 26 L211 53" fill="none" stroke="#e9e6dc" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><path d="M54 40 L67 13 L75 27 L81 23 L86 36 M133 30 L145 17 L153 27 L160 25 M23 41 L32 33 L39 39" fill="none" stroke="#e9e6dc" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg><h1>NATIONAL PARKS</h1><p>UNITED STATES</p></div><div class="stone-base"></div></div></div>
         <div class="header-content">
-            <h1>National Parks Tracker</h1>
+            <h1><a class="site-title" href="main.html">National Parks Tracker</a></h1>
             <p>Explore and track your visits to America's National Parks</p>
         </div>
         <div id="auth-container">
@@ -38,23 +44,42 @@
                 <input type="text" id="entry-title" name="entry-title" placeholder="Journal Entry Title.." required>
 
                 <label for="entry-text">Journal Entry</label>
-                <textarea id="entry-text" name="entry-text" placeholder="Write about your experience..." rows="8" required></textarea>
+                <textarea id="entry-text" name="entry-text" placeholder="Write about your experience..." rows="5" required></textarea>
 
                 <button type="submit" id="submit-btn">Save Entry</button>
+                <button type="button" id="cancel-edit-btn" hidden>Cancel Edit</button>
             </div>
         </form>
 
         <section id="entries-section">
             <h2>My Journal Entries</h2>
+            <div class="journal-tools" aria-label="Journal filters">
+                <div class="journal-filter-bar">
+                    <label class="visually-hidden" for="journal-search">Search entries</label>
+                    <input id="journal-search" type="search" maxlength="80" placeholder="Search your memories...">
+                    <button type="button" class="journal-search-icon" aria-label="Search entries">⌕</button>
+                </div>
+                <label class="visually-hidden" for="journal-sort">Sort entries</label>
+                <select id="journal-sort">
+                    <option value="chronological">Newest first</option>
+                    <option value="alphabetical">Park A–Z</option>
+                    <option value="reverse-chronological">Oldest first</option>
+                </select>
+            </div>
+            <div class="journal-book" aria-live="polite">
+                <button id="journal-prev" class="journal-turn" type="button" aria-label="Previous journal page">‹</button>
             <div id="entries-container">
                 <p class="loading">Loading your entries...</p>
             </div>
+                <button id="journal-next" class="journal-turn" type="button" aria-label="Next journal page">›</button>
+            </div>
+            <p id="journal-page-indicator" class="journal-page-indicator"></p>
         </section>
     </main>
 
     <footer>
         <a href="main.html">Home</a>
-        <p>&copy; 2025</p>
+        <p>&copy; 2026</p>
     </footer>
 
     <script type="module" src="scripts/journal.js"></script>
