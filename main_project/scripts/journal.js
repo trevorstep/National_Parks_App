@@ -9,7 +9,7 @@ let filteredEntries = [];
 let currentPage = 0;
 let editingId = null;
 
-const pageSize = () => window.matchMedia('(max-width: 700px)').matches ? 3 : 6;
+const pageSize = () => window.matchMedia('(max-width: 700px)').matches ? 1 : 2;
 const clean = (value, max) => String(value || '').trim().slice(0, max);
 function splitDescription(description) {
   const lines = String(description || '').split('\n\n');
@@ -128,4 +128,35 @@ function turnPage(direction) {
 }
 document.getElementById('journal-prev').addEventListener('click', () => turnPage(-1));
 document.getElementById('journal-next').addEventListener('click', () => turnPage(1));
+
+const journalBook = document.querySelector('.journal-book');
+let swipeStartX = null;
+let swipeStartY = null;
+let wheelLockUntil = 0;
+
+journalBook.addEventListener('pointerdown', event => {
+  if (event.pointerType === 'mouse') return;
+  swipeStartX = event.clientX;
+  swipeStartY = event.clientY;
+});
+
+journalBook.addEventListener('pointerup', event => {
+  if (swipeStartX === null || event.pointerType === 'mouse') return;
+  const deltaX = event.clientX - swipeStartX;
+  const deltaY = event.clientY - swipeStartY;
+  swipeStartX = null;
+  swipeStartY = null;
+  if (Math.abs(deltaX) < 45 || Math.abs(deltaX) < Math.abs(deltaY)) return;
+  turnPage(deltaX < 0 ? 1 : -1);
+});
+
+journalBook.addEventListener('pointercancel', () => { swipeStartX = null; swipeStartY = null; });
+
+journalBook.addEventListener('wheel', event => {
+  if (Math.abs(event.deltaX) <= Math.abs(event.deltaY) || Math.abs(event.deltaX) < 20 || Date.now() < wheelLockUntil) return;
+  event.preventDefault();
+  wheelLockUntil = Date.now() + 550;
+  turnPage(event.deltaX > 0 ? 1 : -1);
+}, { passive: false });
+
 window.addEventListener('resize', displayEntries);

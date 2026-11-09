@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="About National Parks Tracker">
+  <title>About | National Parks Tracker</title>
+  <link rel="icon" type="image/svg+xml" href="images/park-sign.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@400;500;600;700&family=Rye&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/styles.css">
+  <link rel="stylesheet" href="styles/sign.css">
+</head>
+<body>
+  <header>
+    <div class="park-sign-stage" role="img" aria-label="National Park Service style entrance sign"><div class="sign"><div class="post post-left"></div><div class="post post-right"></div><div class="top-beam"></div><div class="chain chain-left"></div><div class="chain chain-right"></div><div class="park-emblem"><span>NP</span></div><div class="plaque"><svg class="mountains" viewBox="0 0 220 65" xmlns="http://www.w3.org/2000/svg"><path d="M8 54 L32 33 L45 43 L67 13 L86 36 L101 26 L119 41 L145 17 L164 34 L180 26 L211 53" fill="none" stroke="#e9e6dc" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><path d="M54 40 L67 13 L75 27 L81 23 L86 36 M133 30 L145 17 L153 27 L160 25 M23 41 L32 33 L39 39" fill="none" stroke="#e9e6dc" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg><h1>NATIONAL PARKS</h1><p>UNITED STATES</p></div><div class="stone-base"></div></div></div>
+    <div class="header-content"><h1><a class="site-title" href="main.html">National Parks Tracker</a></h1><p>Explore and track your visits to America's National Parks</p></div>
+    <div id="auth-container"><a class="journal-nav-link" href="logMemories.html">Journal</a><button id="login-btn" style="display:none">Sign in with Google</button><div id="user-info" style="display:none"><span id="user-name"></span><button id="logout-btn">Sign Out</button></div></div>
+  </header>
+  <main class="about-page">
+    <section class="detail-card">
+      <h1>About National Parks Tracker</h1>
+      <p>This page is ready for your project story, credits, data sources, and future notes.</p>
+    </section>
+  </main>
+  <footer><a href="main.html">Home</a><a href="about.html">About</a><p>&copy; 2026</p></footer>
+  <script type="module">
+    import { initAuth } from './scripts/auth.js';
+    initAuth();
+  </script>
+</body>
+</html>
